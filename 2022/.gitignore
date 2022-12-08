@@ -1,0 +1,4 @@
+input/
+.lsp/
+.clj-kondo/
+.cpcache/

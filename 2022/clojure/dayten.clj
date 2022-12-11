@@ -34,14 +34,14 @@
 
 (def part-2
   (->>
-    history
     (map (fn [pixel signal]
            (if (and 
-                (<= (mod pixel width) (+ signal 1))
-                (>= (mod pixel width) (- signal 1)))
+                 (<= (mod pixel width) (+ signal 1))
+                 (>= (mod pixel width) (- signal 1)))
              "#"
              ".")) 
-         (range))
+         (range)
+         history)
     (partition width)
     (map #(apply str %))
     (str/join "\n")))

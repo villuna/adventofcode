@@ -16,59 +16,52 @@ pub fn day_eleven(_input: String) {
     // I will parse them properly later
     let monkeys = vec![
         Monkey {
-          items: VecDeque::from([85, 79, 63, 72]),
-          operation: |old| old * 17,
-          divisor: 2,
-            next_monkeys: (2, 6)
+            items: VecDeque::from([85, 79, 63, 72]),
+            operation: |old| old * 17,
+            divisor: 2,
+            next_monkeys: (2, 6),
         },
-
         Monkey {
-          items: VecDeque::from([53, 94, 65, 81, 93, 73, 57, 92]),
-          operation: |old| old * old,
-          divisor: 7,
-            next_monkeys: (0, 2)
+            items: VecDeque::from([53, 94, 65, 81, 93, 73, 57, 92]),
+            operation: |old| old * old,
+            divisor: 7,
+            next_monkeys: (0, 2),
         },
-
         Monkey {
-          items: VecDeque::from([62, 63]),
-          operation: |old| old + 7,
-          divisor: 13,
-            next_monkeys: (7, 6)
+            items: VecDeque::from([62, 63]),
+            operation: |old| old + 7,
+            divisor: 13,
+            next_monkeys: (7, 6),
         },
-
         Monkey {
-          items: VecDeque::from([57, 92, 56]),
-          operation: |old| old + 4,
-          divisor: 5,
-            next_monkeys: (4, 5)
+            items: VecDeque::from([57, 92, 56]),
+            operation: |old| old + 4,
+            divisor: 5,
+            next_monkeys: (4, 5),
         },
-
         Monkey {
-          items: VecDeque::from([67]),
-          operation: |old| old + 5,
-          divisor: 3,
-            next_monkeys: (1, 5)
+            items: VecDeque::from([67]),
+            operation: |old| old + 5,
+            divisor: 3,
+            next_monkeys: (1, 5),
         },
-
         Monkey {
-          items: VecDeque::from([85, 56, 66, 72, 57, 99]),
-          operation: |old| old + 6,
-          divisor: 19,
-            next_monkeys: (1, 0)
+            items: VecDeque::from([85, 56, 66, 72, 57, 99]),
+            operation: |old| old + 6,
+            divisor: 19,
+            next_monkeys: (1, 0),
         },
-
         Monkey {
-          items: VecDeque::from([86, 65, 98, 97, 69]),
-          operation: |old| old * 13,
-          divisor: 11,
-            next_monkeys: (3, 7)
+            items: VecDeque::from([86, 65, 98, 97, 69]),
+            operation: |old| old * 13,
+            divisor: 11,
+            next_monkeys: (3, 7),
         },
-
         Monkey {
-          items: VecDeque::from([87, 68, 92, 66, 91, 50, 68]),
-          operation: |old| old + 2,
-          divisor: 17,
-            next_monkeys: (4, 3)
+            items: VecDeque::from([87, 68, 92, 66, 91, 50, 68]),
+            operation: |old| old + 2,
+            divisor: 17,
+            next_monkeys: (4, 3),
         },
     ];
 
@@ -92,7 +85,7 @@ fn part_one(mut monkeys: Vec<Monkey>) {
                 let next_monkey = if new % monkeys[i].divisor == 0 {
                     monkeys[i].next_monkeys.0
                 } else {
-                    monkeys[i].next_monkeys.1 
+                    monkeys[i].next_monkeys.1
                 };
 
                 monkeys[next_monkey].items.push_back(new);
@@ -101,7 +94,10 @@ fn part_one(mut monkeys: Vec<Monkey>) {
     }
 
     inspections.sort();
-    println!("{}", inspections[num_monkeys - 1] * inspections[num_monkeys - 2]);
+    println!(
+        "{}",
+        inspections[num_monkeys - 1] * inspections[num_monkeys - 2]
+    );
 }
 
 fn part_two(mut monkeys: Vec<Monkey>) {
@@ -121,7 +117,7 @@ fn part_two(mut monkeys: Vec<Monkey>) {
                 let next_monkey = if new % monkeys[i].divisor == 0 {
                     monkeys[i].next_monkeys.0
                 } else {
-                    monkeys[i].next_monkeys.1 
+                    monkeys[i].next_monkeys.1
                 };
 
                 monkeys[next_monkey].items.push_back(new);
@@ -130,5 +126,8 @@ fn part_two(mut monkeys: Vec<Monkey>) {
     }
 
     inspections.sort();
-    println!("{}", inspections[num_monkeys - 1] * inspections[num_monkeys - 2]);
+    println!(
+        "{}",
+        inspections[num_monkeys - 1] * inspections[num_monkeys - 2]
+    );
 }

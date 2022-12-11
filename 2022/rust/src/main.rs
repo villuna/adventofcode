@@ -1,26 +1,26 @@
 // CARGO FMT KEEPS SORTING THESE IN ALPHABETICAL ORDER
 // AAAAAAAAAAAAAAAAAAAAAAAAAA
 mod dayeight;
+mod dayeleven;
 mod dayfive;
 mod dayfour;
+mod daynine;
 mod dayone;
 mod dayseven;
 mod daysix;
 mod daythree;
 mod daytwo;
-mod daynine;
-mod dayeleven;
 
 use dayeight::*;
+use dayeleven::*;
 use dayfive::*;
 use dayfour::*;
+use daynine::*;
 use dayone::*;
 use dayseven::*;
 use daysix::*;
 use daythree::*;
 use daytwo::*;
-use daynine::*;
-use dayeleven::*;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read};

@@ -56,7 +56,6 @@ impl Forest {
             }
         }
 
-
         for y in 0..self.height {
             max = -1;
             for x in (0..self.width).rev() {
@@ -77,7 +76,8 @@ impl Forest {
             }
         }
 
-        (0..self.height).cartesian_product(0..self.width)
+        (0..self.height)
+            .cartesian_product(0..self.width)
             .map(|(y, x)| grids.iter().any(|grid| grid[y][x]))
             .map(|b| b as usize)
             .sum()
@@ -85,23 +85,34 @@ impl Forest {
 
     fn view_score(&self, pos: (usize, usize)) -> usize {
         // Pos is going to be (y, x) just because of how it be
-        
+
         // I've already used the word "height" so I'll just write it in another language
         // level 99 sigma female code aesthetics
         let takasa = self.grid[pos.0][pos.1];
 
         let scores = [
-            ((pos.1 + 1)..self.width).take_until(|&x| self.grid[pos.0][x as usize] >= takasa).count(),
-            ((pos.0 + 1)..self.height).take_until(|&y| self.grid[y as usize][pos.1] >= takasa).count(),
-            (0..pos.1).rev().take_until(|&x| self.grid[pos.0][x as usize] >= takasa).count(),
-            (0..pos.0).rev().take_until(|&y| self.grid[y as usize][pos.1] >= takasa).count(),
+            ((pos.1 + 1)..self.width)
+                .take_until(|&x| self.grid[pos.0][x as usize] >= takasa)
+                .count(),
+            ((pos.0 + 1)..self.height)
+                .take_until(|&y| self.grid[y as usize][pos.1] >= takasa)
+                .count(),
+            (0..pos.1)
+                .rev()
+                .take_until(|&x| self.grid[pos.0][x as usize] >= takasa)
+                .count(),
+            (0..pos.0)
+                .rev()
+                .take_until(|&y| self.grid[y as usize][pos.1] >= takasa)
+                .count(),
         ];
 
         scores.iter().product()
     }
 
     fn max_view_score(&self) -> usize {
-        (0..self.height).cartesian_product(0..self.width)
+        (0..self.height)
+            .cartesian_product(0..self.width)
             .map(|p| self.view_score(p))
             .max()
             .unwrap()

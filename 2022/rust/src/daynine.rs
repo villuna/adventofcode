@@ -55,8 +55,8 @@ fn are_adjacent(head: (i32, i32), tail: (i32, i32)) -> bool {
 
 fn simulate_rope(moves: &[(Direction, i32)], num_knots: usize) -> usize {
     let mut visited: HashSet<(i32, i32)> = HashSet::new();
-    let mut knots = vec![(0,0); num_knots];
-    visited.insert((0,0));
+    let mut knots = vec![(0, 0); num_knots];
+    visited.insert((0, 0));
 
     for (direction, distance) in moves {
         for _ in 0..*distance {
@@ -79,6 +79,6 @@ fn simulate_rope(moves: &[(Direction, i32)], num_knots: usize) -> usize {
             visited.insert(knots[num_knots - 1]);
         }
     }
-    
+
     visited.len()
 }

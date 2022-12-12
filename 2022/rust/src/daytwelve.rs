@@ -46,14 +46,13 @@ where
     // where d is the distance from the start to the tile,
     // and h is the heuristic: an estimate of the shortest distance from
     // the tile to the goal.
-    frontier.push(vec![start], -(heuristic(&start) as i32));
+    frontier.push((start, 0), -(heuristic(&start) as i32));
 
-    while let Some((path, _prio)) = frontier.pop() {
-        let last = path.last().unwrap();
-        visited.insert(*last);
+    while let Some(((last, len), _)) = frontier.pop() {
+        visited.insert(last);
 
         if map[last.0][last.1] == goal {
-            return Some(path.len() as u32 - 1);
+            return Some(len as u32);
         }
 
         // Is there a better way of doing this 😅
@@ -74,11 +73,7 @@ where
             })
         {
             if !visited.contains(&new) {
-                let mut new_path = path.clone();
-                let len = new_path.len();
-
-                new_path.push(new);
-                frontier.push(new_path, -(len as i32 - 1 + heuristic(&new)));
+                frontier.push((new, len + 1), -(len + 1 + heuristic(&new)));
             }
         }
     }

@@ -11,6 +11,7 @@ mod daysix;
 mod daythree;
 mod daytwelve;
 mod daytwo;
+mod daythirteen;
 
 use dayeight::*;
 use dayeleven::*;
@@ -23,6 +24,7 @@ use daysix::*;
 use daythree::*;
 use daytwelve::*;
 use daytwo::*;
+use daythirteen::*;
 use std::env;
 use std::fs::File;
 use std::io::{self, Read};
@@ -60,6 +62,7 @@ fn main() {
         9 => day_nine(input),
         11 => day_eleven(input),
         12 => day_twelve(input),
+        13 => day_thirteen(input),
         _ => println!("Not a valid day!"),
     }
 }

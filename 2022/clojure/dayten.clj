@@ -5,7 +5,7 @@
 (def height 6)
 
 (defn parse-op [line]
-  (let [groups (re-find (re-matcher #"addx (-?\d+)" line))]
+  (let [groups (re-matches #"addx (-?\d+)" line)]
     (if groups
       (Integer/parseInt (nth groups 1))
       nil)))

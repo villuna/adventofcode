@@ -2,3 +2,4 @@ input/
 .lsp/
 .clj-kondo/
 .cpcache/
+node_modules/

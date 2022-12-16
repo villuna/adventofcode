@@ -3,3 +3,4 @@ input/
 .clj-kondo/
 .cpcache/
 node_modules/
+package-lock.json

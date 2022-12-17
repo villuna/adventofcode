@@ -1,5 +1,5 @@
-use std::cmp::Ordering;
 use itertools::Itertools;
+use std::cmp::Ordering;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 enum Packet {
@@ -49,8 +49,7 @@ fn parse_number(tokens: &[Token], current: usize) -> Option<(Packet, usize)> {
 }
 
 fn parse_item(tokens: &[Token], current: usize) -> Option<(Packet, usize)> {
-    parse_number(tokens, current)
-        .or_else(|| parse_blist(tokens, current))
+    parse_number(tokens, current).or_else(|| parse_blist(tokens, current))
 }
 
 fn parse_blist(tokens: &[Token], mut current: usize) -> Option<(Packet, usize)> {
@@ -72,7 +71,7 @@ fn parse_blist(tokens: &[Token], mut current: usize) -> Option<(Packet, usize)> 
                     current = next;
                     list.push(item);
                 } else {
-                    return None
+                    return None;
                 }
             }
 
@@ -89,7 +88,8 @@ fn parse_packet(input: &str) -> Packet {
 }
 
 fn parse_input(input: &str) -> Vec<Packet> {
-    input.lines()
+    input
+        .lines()
         .filter(|line| !line.is_empty())
         .map(|line| parse_packet(line))
         .collect()
@@ -102,7 +102,7 @@ fn ordering(p1: &Packet, p2: &Packet) -> Ordering {
             for (p1, p2) in l1.iter().zip(l2.iter()) {
                 let ord = ordering(p1, p2);
                 if ord.is_ne() {
-                    return ord; 
+                    return ord;
                 }
             }
 
@@ -120,7 +120,8 @@ pub fn day_thirteen(input: String) {
 }
 
 fn part_one(packets: &[Packet]) -> usize {
-    packets.chunks_exact(2)
+    packets
+        .chunks_exact(2)
         .enumerate()
         .filter(|&(_, p)| ordering(&p[0], &p[1]).is_lt())
         .map(|(i, _)| i + 1)
@@ -135,11 +136,9 @@ fn part_two(packets: &mut Vec<Packet>) -> usize {
 
     packets.sort_by(|p1, p2| ordering(p1, p2));
 
-    let (first, _) = packets.iter()
-        .find_position(|p| **p == first).unwrap();
+    let (first, _) = packets.iter().find_position(|p| **p == first).unwrap();
 
-    let (last, _) = packets.iter()
-        .find_position(|p| **p == last).unwrap();
+    let (last, _) = packets.iter().find_position(|p| **p == last).unwrap();
 
     (first + 1) * (last + 1)
 }

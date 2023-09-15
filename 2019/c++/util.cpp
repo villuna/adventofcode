@@ -1,6 +1,7 @@
 #include "util.hpp"
 
 #include <fstream>
+#include <stdexcept>
 #include <string>
 #include <vector>
 #include <iostream>
@@ -20,7 +21,7 @@ std::string read_input(int day) {
 
         in.close();
     } else {
-        std::cerr << "couldn't open file: " << filename << std::endl;
+        throw std::invalid_argument("file does not exist");
     }
 
     return res;
@@ -41,7 +42,7 @@ std::vector<std::string> read_input_lines(int day) {
 
         in.close();
     } else {
-        std::cerr << "couldn't open file: " << filename << std::endl;
+        throw std::invalid_argument("file does not exist");
     }
 
     return res;

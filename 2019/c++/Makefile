@@ -1,6 +1,16 @@
 CC=g++
-DEPS=days.hpp util.hpp
-CFLAGS=-std=c++11
+CFLAGS=-std=c++17 -Isrc
+OBJS=$(patsubst src/%.cpp,obj/%.o,$(wildcard src/*.cpp))
 
-build: main.cpp util.cpp day1.cpp day2.cpp
+build: $(OBJS)
 	$(CC) $^ -o aocpp $(CFLAGS)
+
+obj/%.o: src/%.cpp | obj
+	$(CC) $^ -c -o $@ $(CFLAGS)
+
+obj:
+	mkdir -p obj
+
+clean:
+	rm -f obj/*.o
+	rm -f aocpp

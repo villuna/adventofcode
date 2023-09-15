@@ -15,6 +15,7 @@ static void (*functions[DAYS])() = {
 };
 
 int main(int argc, char** argv) {
+    std::cout << "hi" << std::endl;
     if (argc != 2) {
         std::cerr << "usage: aocpp [day]" << std::endl;
         return 1;

@@ -1,6 +1,8 @@
+#include <vector>
 #include <exception>
 #include <iostream>
 #include <string>
+#include "util.hpp"
 #include "days.hpp"
 
 #define DAYS 2

@@ -47,3 +47,19 @@ std::vector<std::string> read_input_lines(int day) {
 
     return res;
 }
+
+std::vector<std::string> split_string(std::string in, std::string delimiter) {
+    // written with help from https://stackoverflow.com/questions/14265581/parse-split-a-string-in-c-using-string-delimiter-standard-c
+    std::vector<std::string> res;
+    size_t position = 0;
+    size_t next;
+
+    while ((next = in.find(delimiter, position)) != std::string::npos) {
+        res.push_back(in.substr(position, next - position));
+        position = next + delimiter.length();
+    }
+
+    res.push_back(in.substr(position, next));
+
+    return res;
+}

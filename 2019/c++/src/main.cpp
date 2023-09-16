@@ -5,17 +5,17 @@
 #include "util.hpp"
 #include "days.hpp"
 
-#define DAYS 2
+#define DAYS 3
 
 // I really do hate c's function pointer syntax
 // This is an array of functions of type `fn() -> ()``
 static void (*functions[DAYS])() = {
     day1,
     day2,
+    day3,
 };
 
 int main(int argc, char** argv) {
-    std::cout << "hi" << std::endl;
     if (argc != 2) {
         std::cerr << "usage: aocpp [day]" << std::endl;
         return 1;

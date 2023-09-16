@@ -1,11 +1,13 @@
 use itertools::Itertools;
-use std::{
-    collections::{HashMap, BTreeMap, VecDeque, HashSet},
-    hash::Hash, vec::IntoIter,
-};
-use regex::Regex;
 use rayon::prelude::*;
+use regex::Regex;
 use std::sync::atomic::{AtomicU16, Ordering};
+use std::{
+    collections::{BTreeMap, HashMap, HashSet, VecDeque},
+    hash::Hash,
+    sync::atomic::AtomicU64,
+    vec::IntoIter,
+};
 
 const START_STATE: Label = ['A', 'A'];
 const MEMO_CAP: usize = 58720255;
@@ -86,15 +88,16 @@ impl Environment {
 
         let distances = Self::calculate_distances(&graph);
 
-        Environment {
-            graph,
-            distances,
-        }
+        Environment { graph, distances }
     }
 
     fn calculate_distances(graph: &HashMap<Label, Valve>) -> HashMap<Label, BTreeMap<Label, i8>> {
         // Find the shortest path between valves (of note) using dijkstra
-        let important_valves = graph.iter().filter(|(&label, valve)| label == START_STATE || valve.rate > 0).map(|x| *x.0).collect_vec();
+        let important_valves = graph
+            .iter()
+            .filter(|(&label, valve)| label == START_STATE || valve.rate > 0)
+            .map(|x| *x.0)
+            .collect_vec();
         let mut res = HashMap::new();
 
         for start in important_valves.iter() {
@@ -134,7 +137,13 @@ impl Helper {
     fn next_states(&self, env: &Environment, open_valves: &Vec<Label>) -> Vec<Helper> {
         // If currently travelling, just move. Otherwise consider the state we end up at.
         let current_state = if let Some(label) = self.goal {
-            if self.progress < *env.distances.get(&self.position).and_then(|map| map.get(&label)).unwrap() {
+            if self.progress
+                < *env
+                    .distances
+                    .get(&self.position)
+                    .and_then(|map| map.get(&label))
+                    .unwrap()
+            {
                 return vec![Helper {
                     progress: self.progress + 1,
                     ..self.clone()
@@ -161,8 +170,13 @@ impl Helper {
 
         let mut res = Vec::new();
         // Or we could move to any closed, notable valve
-        for (&valve, _) in env.distances.get(&current_state.position).unwrap().iter()
-            .filter(|(&valve, _)| valve != current_state.position && !open_valves.contains(&valve)){
+        for (&valve, _) in env
+            .distances
+            .get(&current_state.position)
+            .unwrap()
+            .iter()
+            .filter(|(&valve, _)| valve != current_state.position && !open_valves.contains(&valve))
+        {
             res.push(Helper {
                 opening_valve: false,
                 goal: Some(valve),
@@ -217,17 +231,30 @@ impl State {
         }
 
         let (helpers, time_step) = if self.helpers.iter().all(|helper| helper.goal.is_some()) {
-            let min_distance = self.helpers.iter()
-                .map(|helper| env.distances.get(&helper.position).unwrap().get(&helper.goal.unwrap()).unwrap() - helper.progress)
+            let min_distance = self
+                .helpers
+                .iter()
+                .map(|helper| {
+                    env.distances
+                        .get(&helper.position)
+                        .unwrap()
+                        .get(&helper.goal.unwrap())
+                        .unwrap()
+                        - helper.progress
+                })
                 .min()
                 .unwrap();
 
-            (self.helpers.iter()
-                .map(|helper| Helper {
-                    progress: helper.progress + min_distance,
-                    ..helper.clone()
-                })
-                .collect_vec(), min_distance)
+            (
+                self.helpers
+                    .iter()
+                    .map(|helper| Helper {
+                        progress: helper.progress + min_distance,
+                        ..helper.clone()
+                    })
+                    .collect_vec(),
+                min_distance,
+            )
         } else {
             (self.helpers.clone(), 0)
         };
@@ -236,11 +263,7 @@ impl State {
             .iter()
             .map(|helper| helper.next_states(env, &open_valves))
             .multi_cartesian_product()
-            .filter(|helpers| {
-                helpers
-                    .iter()
-                    .all_unique()
-            })
+            .filter(|helpers| helpers.iter().all_unique())
             .map(|helpers| State {
                 done: false,
                 helpers,
@@ -338,7 +361,8 @@ impl Iterator for TopologicalOrdering<'_> {
                     if state.time == self.time {
                         return Some(state);
                     } else if state.time < self.time {
-                        self.stack.push(state.next_states(self.env, self.max_time).into_iter());
+                        self.stack
+                            .push(state.next_states(self.env, self.max_time).into_iter());
                     }
                 }
             }
@@ -353,17 +377,17 @@ impl Iterator for TopologicalOrdering<'_> {
 
 pub fn day_sixteen(input: String) {
     /*
-    let input = "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
-Valve BB has flow rate=13; tunnels lead to valves CC, AA
-Valve CC has flow rate=2; tunnels lead to valves DD, BB
-Valve DD has flow rate=20; tunnels lead to valves CC, AA, EE
-Valve EE has flow rate=3; tunnels lead to valves FF, DD
-Valve FF has flow rate=0; tunnels lead to valves EE, GG
-Valve GG has flow rate=0; tunnels lead to valves FF, HH
-Valve HH has flow rate=22; tunnel leads to valve GG
-Valve II has flow rate=0; tunnels lead to valves AA, JJ
-Valve JJ has flow rate=21; tunnel leads to valve II";
-    */
+        let input = "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
+    Valve BB has flow rate=13; tunnels lead to valves CC, AA
+    Valve CC has flow rate=2; tunnels lead to valves DD, BB
+    Valve DD has flow rate=20; tunnels lead to valves CC, AA, EE
+    Valve EE has flow rate=3; tunnels lead to valves FF, DD
+    Valve FF has flow rate=0; tunnels lead to valves EE, GG
+    Valve GG has flow rate=0; tunnels lead to valves FF, HH
+    Valve HH has flow rate=22; tunnel leads to valve GG
+    Valve II has flow rate=0; tunnels lead to valves AA, JJ
+    Valve JJ has flow rate=21; tunnel leads to valve II";
+        */
     let env = Environment::parse(&input);
 
     // Part 1
@@ -378,10 +402,12 @@ fn better_best_path(env: &Environment, max_time: i8, elephant: bool) -> i16 {
     let helpers = if elephant { 2 } else { 1 };
     let first_state = State::start(helpers);
 
-    first_state.next_states(env, max_time)
+    first_state
+        .next_states(env, max_time)
         .into_par_iter()
         .map(|start_state| {
-            let mut stack: Vec<IntoIter<(State, i16)>> = vec![vec![(start_state.clone(), 0)].into_iter()];
+            let mut stack: Vec<IntoIter<(State, i16)>> =
+                vec![vec![(start_state.clone(), 0)].into_iter()];
             let mut max_pressure = 0;
             //let mut pressures: HashMap<State, i16> = HashMap::new();
 
@@ -409,14 +435,21 @@ fn better_best_path(env: &Environment, max_time: i8, elephant: bool) -> i16 {
                             max_pressure = pressure;
                         }
                     } else if state.time <= max_time {
-                        stack.push(state.next_states(env, max_time)
-                            .into_iter()
-                            .map(|new_state| {
-                                let new_time = new_state.time;
-                                (new_state, pressure + pressure_released * (new_time - state.time) as i16)
-                            })
-                            .collect_vec()
-                            .into_iter());
+                        stack.push(
+                            state
+                                .next_states(env, max_time)
+                                .into_iter()
+                                .map(|new_state| {
+                                    let new_time = new_state.time;
+                                    (
+                                        new_state,
+                                        pressure
+                                            + pressure_released * (new_time - state.time) as i16,
+                                    )
+                                })
+                                .collect_vec()
+                                .into_iter(),
+                        );
                     }
                 }
             }
@@ -443,7 +476,7 @@ fn best_path(env: &Environment, max_time: i8, elephant: bool) -> i16 {
             time = state.time;
             println!("t = {time}");
         }
-        
+
         let Some(current_pressure) = pressures.remove(&state) else {
             // Already visited this state, so continue
             continue;
@@ -463,9 +496,13 @@ fn best_path(env: &Environment, max_time: i8, elephant: bool) -> i16 {
             let new_time = new_state.time;
 
             if !pressures.contains_key(&new_state)
-                || *pressures.get(&new_state).unwrap() > current_pressure - pressure_released * (new_time - state.time) as i16
+                || *pressures.get(&new_state).unwrap()
+                    > current_pressure - pressure_released * (new_time - state.time) as i16
             {
-                pressures.insert(new_state, current_pressure - pressure_released * (new_time - state.time) as i16);
+                pressures.insert(
+                    new_state,
+                    current_pressure - pressure_released * (new_time - state.time) as i16,
+                );
             }
         }
     }

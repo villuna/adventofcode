@@ -8,4 +8,6 @@ extern "C" {
 void day3();
 }
 
+void day5();
+
 #endif

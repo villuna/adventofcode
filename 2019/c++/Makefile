@@ -8,6 +8,9 @@ LIBS=lib/libday3.so
 build: $(OBJS) $(LIBS)
 	$(CXX) $^ -o aocpp $(CXXFLAGS)
 
+debug: CXXFLAGS += -g
+debug: build
+
 obj/%.o: src/%.cpp src/*.hpp | obj
 	$(CXX) $< -c -o $@ $(CXXFLAGS)
 

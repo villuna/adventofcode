@@ -1,6 +1,6 @@
 CXX=g++
 RUSTC=rustc
-RUSTCFLAGS=--crate-type=dylib -C opt-level=3
+RUSTCFLAGS=--crate-type=cdylib -C opt-level=3
 CXXFLAGS=-std=c++17 -Isrc
 OBJS=$(patsubst src/%.cpp,obj/%.o,$(wildcard src/*.cpp))
 LIBS=lib/libday3.so

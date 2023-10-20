@@ -9,5 +9,6 @@ void day3();
 }
 
 void day5();
+void day6();
 
 #endif

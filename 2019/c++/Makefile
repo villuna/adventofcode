@@ -1,12 +1,12 @@
 CXX=g++
 RUSTC=rustc
-RUSTCFLAGS=--crate-type=cdylib -C opt-level=3
+RUSTCFLAGS=+nightly --crate-type=staticlib -C panic=abort -C opt-level=3
 CXXFLAGS=-std=c++17 -Isrc
 OBJS=$(patsubst src/%.cpp,obj/%.o,$(wildcard src/*.cpp))
-LIBS=lib/libday3.so
+LIBS=lib/librust.a
 
 build: $(OBJS) $(LIBS)
-	$(CXX) $^ -o aocpp $(CXXFLAGS)
+	$(CXX) $^ -L ./lib -l rust -o aocpp $(CXXFLAGS)
 
 debug: CXXFLAGS += -g
 debug: build
@@ -14,8 +14,8 @@ debug: build
 obj/%.o: src/%.cpp src/*.hpp | obj
 	$(CXX) $< -c -o $@ $(CXXFLAGS)
 
-lib/libday3.so: src/day3.rs | lib 
-	$(RUSTC) $< -o $@ $(RUSTCFLAGS)
+lib/librust.a: src/*.rs | lib 
+	$(RUSTC) $(RUSTCFLAGS) src/rust.rs -o $@
 
 obj:
 	mkdir -p obj
@@ -25,5 +25,5 @@ lib:
 
 clean:
 	rm -f obj/*.o
-	rm -f lib/*.so
+	rm -f lib/*.a
 	rm -f aocpp

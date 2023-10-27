@@ -31,8 +31,9 @@ std::vector<int> read_op(int op) {
 }
 
 void IntcodeComputer::load_program(const std::string& input) {
-    pc = 0;
     std::vector<std::string> input_split = split_string(input, ",");
+    pc = 0;
+    output = 0;
     ops.clear();
 
     for (std::string op : input_split) {
@@ -40,25 +41,34 @@ void IntcodeComputer::load_program(const std::string& input) {
     }
 }
 
-int IntcodeComputer::solve(int input) {
-    pc = 0;
-    int output = 0;
+void IntcodeComputer::load_input(const std::vector<int>& input) {
+    this->input = input;
+    input_index = 0;
+}
 
-    while (true) {
-        if (pc < 0 || pc >= ops.size()) {
+void IntcodeComputer::set_input_at(int index, int value) {
+    if (index < input.size()) {
+        input[index] = value;
+    }
+}
+
+void IntcodeComputer::set_run_mode(run_mode mode) {
+    this->mode = mode;
+}
+
+run_result IntcodeComputer::run() {
+    while (pc < ops.size()) {
+        if (pc < 0) {
             throw std::runtime_error("program counter out of bounds");
         }
 
         std::vector<int> op_vec = read_op(ops[pc]);
 
-        // If the next opt is halt, we don't care what the previous output was
         if (op_vec[0] == HALT) {
-            break;
-        }
-
-        // Otherwise we should check the previous output is 0
-        if (output != 0) {
-            throw std::runtime_error("program error: code " + std::to_string(output));
+            return {
+                .code = output,
+                .halted = true,
+            };
         }
 
         if (op_vec[0] == ADD) {
@@ -77,12 +87,24 @@ int IntcodeComputer::solve(int input) {
             pc += 4;
         } else if (op_vec[0] == INPUT) {
             int addr = wr_addr(op_vec, 1);
-            ops[addr] = input;
+            ops[addr] = input[input_index];
+
+            if (input_index < input.size() - 1) {
+                input_index++;
+            }
+
             pc += 2;
         } else if (op_vec[0] == OUTPUT) {
             int addr = value(op_vec, 1);
             output = addr;
             pc += 2;
+
+            if (mode == RETURN_ON_OUTPUT) {
+                return {
+                    .code = output,
+                    .halted = false,
+                };
+            }
         } else if (op_vec[0] == JUMPIFTRUE) {
             int param = value(op_vec, 1);
             int addr = value(op_vec, 2);
@@ -126,11 +148,11 @@ int IntcodeComputer::solve(int input) {
 
             pc += 4;
         } else {
-            throw std::runtime_error("incorrect operation! " + std::to_string(ops[pc]));
+            throw std::runtime_error("incorrect operation at pc=" + std::to_string(pc) + ": " + std::to_string(ops[pc]));
         }
     }
 
-    return output;
+    throw std::runtime_error("ran out of operations"); 
 }
     
 int IntcodeComputer::value(std::vector<int>& op_vec, int offset) {

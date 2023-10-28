@@ -1,3 +1,4 @@
+#include <cstdint>
 #include <iostream>
 #include <string>
 #include <algorithm>
@@ -10,7 +11,10 @@ int run_simulation(IntcodeComputer& computer, std::vector<int> permutation, std:
 
     for (int setting : permutation) {
         computer.load_program(program);
-        computer.load_input(std::vector({setting, value}));
+        std::vector<int64_t> in_vec;
+        in_vec.push_back(setting);
+        in_vec.push_back(value);
+        computer.load_input(in_vec);
 
         value = computer.run().code;
     }
@@ -42,7 +46,10 @@ int run_feedback_simulation(std::vector<int> permutation, std::string program) {
         computers.push_back(IntcodeComputer(program));
 
         int setting = permutation[i];
-        computers[i].load_input(std::vector({setting, 0}));
+        std::vector<int64_t> in_vec;
+        in_vec.push_back(setting);
+        in_vec.push_back(0);
+        computers[i].load_input(in_vec);
         computers[i].set_run_mode(RETURN_ON_OUTPUT);
     }
 

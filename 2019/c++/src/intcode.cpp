@@ -1,5 +1,6 @@
 #include <iostream>
 #include <stdexcept>
+#include <cstdint>
 #include "intcode.hpp"
 #include "util.hpp"
 
@@ -12,11 +13,18 @@ enum opcode {
     JUMPIFFALSE = 6,
     LESSTHAN = 7,
     EQUAL = 8,
+    OFFSET = 9,
     HALT = 99,
 };
 
-std::vector<int> read_op(int op) {
-    std::vector<int> out;
+enum mode {
+    POSITION = 0,
+    IMMEDIATE = 1,
+    RELATIVE = 2,
+};
+
+std::vector<int64_t> read_op(int64_t op) {
+    std::vector<int64_t> out;
 
     out.push_back(op % 100);
 
@@ -34,19 +42,21 @@ void IntcodeComputer::load_program(const std::string& input) {
     std::vector<std::string> input_split = split_string(input, ",");
     pc = 0;
     output = 0;
+    relative_base = 0;
     ops.clear();
+    extra_ops.clear();
 
     for (std::string op : input_split) {
-        ops.push_back(std::stoi(op));
+        ops.push_back(std::stoll(op));
     }
 }
 
-void IntcodeComputer::load_input(const std::vector<int>& input) {
+void IntcodeComputer::load_input(const std::vector<int64_t>& input) {
     this->input = input;
     input_index = 0;
 }
 
-void IntcodeComputer::set_input_at(int index, int value) {
+void IntcodeComputer::set_input_at(int64_t index, int64_t value) {
     if (index < input.size()) {
         input[index] = value;
     }
@@ -57,12 +67,12 @@ void IntcodeComputer::set_run_mode(run_mode mode) {
 }
 
 run_result IntcodeComputer::run() {
-    while (pc < ops.size()) {
+    while (true) {
         if (pc < 0) {
             throw std::runtime_error("program counter out of bounds");
         }
 
-        std::vector<int> op_vec = read_op(ops[pc]);
+        std::vector<int64_t> op_vec = read_op(get_op(pc));
 
         if (op_vec[0] == HALT) {
             return {
@@ -72,22 +82,22 @@ run_result IntcodeComputer::run() {
         }
 
         if (op_vec[0] == ADD) {
-            int a = value(op_vec, 1);
-            int b = value(op_vec, 2);
-            int addr = wr_addr(op_vec, 3);
+            int64_t a = value(op_vec, 1);
+            int64_t b = value(op_vec, 2);
+            int64_t addr = wr_addr(op_vec, 3);
 
-            ops[addr] = a + b;
+            set_op(addr, a + b);
             pc += 4;
         } else if (op_vec[0] == MUL) {
-            int a = value(op_vec, 1);
-            int b = value(op_vec, 2);
-            int addr = wr_addr(op_vec, 3);
+            int64_t a = value(op_vec, 1);
+            int64_t b = value(op_vec, 2);
+            int64_t addr = wr_addr(op_vec, 3);
 
-            ops[addr] = a * b;
+            set_op(addr, a * b);
             pc += 4;
         } else if (op_vec[0] == INPUT) {
-            int addr = wr_addr(op_vec, 1);
-            ops[addr] = input[input_index];
+            int64_t addr = wr_addr(op_vec, 1);
+            set_op(addr, input[input_index]);
 
             if (input_index < input.size() - 1) {
                 input_index++;
@@ -95,7 +105,7 @@ run_result IntcodeComputer::run() {
 
             pc += 2;
         } else if (op_vec[0] == OUTPUT) {
-            int addr = value(op_vec, 1);
+            int64_t addr = value(op_vec, 1);
             output = addr;
             pc += 2;
 
@@ -106,8 +116,8 @@ run_result IntcodeComputer::run() {
                 };
             }
         } else if (op_vec[0] == JUMPIFTRUE) {
-            int param = value(op_vec, 1);
-            int addr = value(op_vec, 2);
+            int64_t param = value(op_vec, 1);
+            int64_t addr = value(op_vec, 2);
 
             if (param != 0) {
                 pc = addr;
@@ -115,8 +125,8 @@ run_result IntcodeComputer::run() {
                 pc += 3;
             }
         } else if (op_vec[0] == JUMPIFFALSE) {
-            int param = value(op_vec, 1);
-            int addr = value(op_vec, 2);
+            int64_t param = value(op_vec, 1);
+            int64_t addr = value(op_vec, 2);
 
             if (param == 0) {
                 pc = addr;
@@ -124,39 +134,63 @@ run_result IntcodeComputer::run() {
                 pc += 3;
             }
         } else if (op_vec[0] == LESSTHAN) {
-            int a = value(op_vec, 1);
-            int b = value(op_vec, 2);
-            int addr = wr_addr(op_vec, 3);
+            int64_t a = value(op_vec, 1);
+            int64_t b = value(op_vec, 2);
+            int64_t addr = wr_addr(op_vec, 3);
 
             if (a < b) {
-                ops[addr] = 1;
+                set_op(addr, 1);
             } else {
-                ops[addr] = 0;
+                set_op(addr, 0);
             }
 
             pc += 4;
         } else if (op_vec[0] == EQUAL) {
-            int a = value(op_vec, 1);
-            int b = value(op_vec, 2);
-            int addr = wr_addr(op_vec, 3);
+            int64_t a = value(op_vec, 1);
+            int64_t b = value(op_vec, 2);
+            int64_t addr = wr_addr(op_vec, 3);
 
             if (a == b) {
-                ops[addr] = 1;
+                set_op(addr, 1);
             } else {
-                ops[addr] = 0;
+                set_op(addr, 0);
             }
 
             pc += 4;
+        } else if (op_vec[0] == OFFSET) {
+            int64_t off = value(op_vec, 1);
+            relative_base += off;
+            pc += 2;
         } else {
             throw std::runtime_error("incorrect operation at pc=" + std::to_string(pc) + ": " + std::to_string(ops[pc]));
         }
     }
+}
 
-    throw std::runtime_error("ran out of operations"); 
+int64_t IntcodeComputer::get_op(int64_t index) {
+    if (index < ops.size()) {
+        return ops[index];
+    } else {
+        auto op = extra_ops.find(index);
+
+        if (op == extra_ops.end()) {
+            return 0;
+        } else {
+            return op->second; 
+        }
+    }
+}
+
+void IntcodeComputer::set_op(int64_t index, int64_t value) {
+    if (index < ops.size()) {
+        ops[index] = value;
+    } else {
+        extra_ops[index] = value;
+    }
 }
     
-int IntcodeComputer::value(std::vector<int>& op_vec, int offset) {
-    int mode;
+int64_t IntcodeComputer::value(std::vector<int64_t>& op_vec, int64_t offset) {
+    int64_t mode;
 
     if (offset < op_vec.size()) {
         mode = op_vec[offset];
@@ -164,18 +198,34 @@ int IntcodeComputer::value(std::vector<int>& op_vec, int offset) {
         mode = 0;
     }
 
-    int res;
-    if (mode == 0) {
-        res = ops[ops[pc + offset]];
-    } else if (mode == 1) {
-        res = ops[pc + offset];
+    int64_t res;
+    if (mode == POSITION) {
+        res = get_op(get_op(pc + offset));
+    } else if (mode == IMMEDIATE) {
+        res = get_op(pc + offset);
+    } else if (mode == RELATIVE) {
+        res = get_op(get_op(pc + offset) + relative_base);
     } else {
-        throw std::invalid_argument("mode should be 0 or 1, got " + std::to_string(mode));
+        throw std::invalid_argument("unrecognised mode: " + std::to_string(mode));
     }
 
     return res;
 }
 
-int IntcodeComputer::wr_addr(std::vector<int>& op_vec, int offset) {
-    return ops[pc + offset];
+int64_t IntcodeComputer::wr_addr(std::vector<int64_t>& op_vec, int64_t offset) {
+    int64_t mode;
+
+    if (offset < op_vec.size()) {
+        mode = op_vec[offset];
+    } else {
+        mode = 0;
+    }
+
+    if (mode == POSITION) {
+        return get_op(pc + offset);
+    } else if (mode == RELATIVE) {
+        return get_op(pc + offset) + relative_base;
+    } else {
+        throw std::invalid_argument("unsupported write mode: " + std::to_string(mode));
+    }
 }

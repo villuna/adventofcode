@@ -2,6 +2,7 @@ use core::cmp;
 use alloc::vec::Vec;
 
 use to_rust_str;
+use println;
 
 #[derive(Debug)]
 struct Interval {
@@ -74,14 +75,9 @@ fn manhattan_norm(point: (i32, i32)) -> i32 {
     point.0.abs() + point.1.abs()
 }
 
-#[repr(C)]
-pub struct Day3Result {
-    p1: i32,
-    p2: i32,
-}
-
 #[no_mangle]
-pub extern "C" fn rust_day3(input: *const u8) -> Day3Result {
+pub extern "C" fn rust_day3(input: *const u8) {
+    println!("Hi from rust :3");
     let input = unsafe { to_rust_str(input).unwrap() };
     let intervals = input.lines()
         .map(|line| {
@@ -127,10 +123,12 @@ pub extern "C" fn rust_day3(input: *const u8) -> Day3Result {
         .min()
         .unwrap();
 
+    println!("part 1: {p1}");
+
     // Part 2
     let p2 = part2(&intervals[0], &intervals[1], &intersections);
 
-    Day3Result { p1, p2 }
+    println!("part 2: {p2}");
 }
 
 fn travel_to_intersection(ivs: &[Interval], is: (i32, i32)) -> i32 {

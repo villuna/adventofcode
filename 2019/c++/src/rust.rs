@@ -1,13 +1,17 @@
 #![no_std]
+#![allow(internal_features)]
 #![feature(lang_items, panic_info_message)]
 extern crate alloc;
 
 pub mod day3;
+pub mod day8;
 pub use day3::*;
+pub use day8::*;
 
 use core::panic::PanicInfo;
 use core::str::{from_utf8, Utf8Error};
 use alloc::alloc::{Layout, GlobalAlloc};
+use core::fmt::Write;
 
 
 #[lang = "eh_personality"]
@@ -18,12 +22,12 @@ pub extern "C" fn rust_eh_personality() {
 extern "C" {
     fn malloc(size: usize) -> *mut u8;
     fn free(ptr: *mut u8);
-    fn exit(code: i32) -> !;
     fn strlen(string: *const u8) -> usize;
 }
 
 extern "C" { 
     fn handle_panic(message: *const u8, message_len: usize, file: *const u8, file_len: usize, line: u32); 
+    fn print_rust_str(string: *const u8, string_len: usize);
 }
 
 #[panic_handler]
@@ -65,3 +69,33 @@ unsafe impl GlobalAlloc for CAlloc {
 
 #[global_allocator]
 pub static CALLOC: CAlloc = CAlloc;
+
+pub struct CWriter;
+
+impl Write for CWriter {
+    fn write_str(&mut self, s: &str) -> core::fmt::Result {
+        unsafe {
+            print_rust_str(s.as_ptr(), s.len());
+        }
+        Ok(())
+    }
+}
+
+pub static mut WRITER: CWriter = CWriter;
+
+pub fn _print(args: core::fmt::Arguments) {
+    unsafe {
+        WRITER.write_fmt(args).unwrap();
+    }
+}
+
+#[macro_export]
+macro_rules! print {
+    ($($arg:tt)*) => ($crate::_print(format_args!($($arg)*)));
+}
+
+#[macro_export]
+macro_rules! println {
+    () => ($crate::print!("\n"));
+    ($($arg:tt)*) => ($crate::print!("{}\n", format_args!($($arg)*)));
+}

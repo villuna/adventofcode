@@ -159,19 +159,24 @@ fn part2(input: &StarMap, pos: (i16, i16)) {
         });
 
     // The last element of the tuple indicates if the asteroid is destroyed
-    let mut ordered_asteroids = ordered_asteroids.iter().map(|(aster, angle)| (aster, angle, false)).collect::<Vec<_>>();
+    let mut ordered_asteroids = ordered_asteroids.into_iter().map(|(aster, angle)| (aster, angle, false)).collect::<Vec<_>>();
     let mut target = 0;
-    let mut last;
+    let mut last = 0;
 
-    for i in 0..200 {
+    for _ in 0..200 {
         ordered_asteroids[target].2 = true;
         last = target; 
         let last_angle = ordered_asteroids[target].1;
 
-        target = ordered_asteroids[target..]
+        // Eugh this code is kind of nasty but it works and this is just aoc so i dont really
+        // care...
+        target = ordered_asteroids
             .iter()
-            .find(|(aster, angle, destroyed)| !destroyed && angle != last_angle)
-            .unwrap_or_else(|| ordered_asteroids.iter().find(|(_, _, destroyed)| !destroyed))
+            .enumerate()
+            .skip(target)
+            .find(|(_, (_, angle, destroyed))| !destroyed && *angle != last_angle)
+            .unwrap_or_else(|| ordered_asteroids.iter().enumerate().find(|(_, (_, _, destroyed))| !destroyed).unwrap())
+            .0;
     }
 
     let last_asteroid = ordered_asteroids[last].0;
@@ -181,12 +186,6 @@ fn part2(input: &StarMap, pos: (i16, i16)) {
 #[no_mangle]
 pub extern "C" fn rust_day10(input: *const u8) {
     let input = unsafe { to_rust_str(input).expect("Couldnt read input") };
-    let input = ".#....#####...#..
-##...##.#####..##
-##...#...#.#####.
-..#.....#...###..
-..#.#.....#....##";
-
     let map = StarMap::from(input).expect("Couldnt build starmap");
 
     let point = part1(&map);

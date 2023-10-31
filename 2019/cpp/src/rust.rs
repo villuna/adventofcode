@@ -5,8 +5,10 @@ extern crate alloc;
 
 pub mod day3;
 pub mod day8;
+pub mod day10;
 pub use day3::*;
 pub use day8::*;
+pub use day10::*;
 
 use core::panic::PanicInfo;
 use core::str::{from_utf8, Utf8Error};
@@ -28,6 +30,8 @@ extern "C" {
 extern "C" { 
     fn handle_panic(message: *const u8, message_len: usize, file: *const u8, file_len: usize, line: u32); 
     fn print_rust_str(string: *const u8, string_len: usize);
+    fn my_sqrt(num: f32) -> f32;
+    fn my_atan2(y: f32, x: f32) -> f32;
 }
 
 #[panic_handler]
@@ -87,6 +91,14 @@ pub fn _print(args: core::fmt::Arguments) {
     unsafe {
         WRITER.write_fmt(args).unwrap();
     }
+}
+
+pub fn sqrt(num: f32) -> f32 {
+    unsafe { my_sqrt(num) }
+}
+
+pub fn atan2(y: f32, x: f32) -> f32 {
+    unsafe { my_atan2(y, x) }
 }
 
 #[macro_export]

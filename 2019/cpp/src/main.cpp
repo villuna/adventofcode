@@ -5,7 +5,7 @@
 #include "util.hpp"
 #include "days.hpp"
 
-#define DAYS 9
+#define DAYS 10
 
 // I really do hate c's function pointer syntax
 // This is an array of functions of type `fn() -> ()``
@@ -19,6 +19,7 @@ static void (*functions[DAYS])() = {
     day7,
     day8,
     day9,
+    day10,
 };
 
 int main(int argc, char** argv) {

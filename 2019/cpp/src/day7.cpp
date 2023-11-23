@@ -63,7 +63,7 @@ int run_feedback_simulation(std::vector<int> permutation, std::string program) {
 
         res = computers[i].run();
 
-        if (i == permutation.size() - 1 && res.halted) {
+        if (i == permutation.size() - 1 && res.type == TYPE_HALTED) {
             halted = true;
         }
 

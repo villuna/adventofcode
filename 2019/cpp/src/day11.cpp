@@ -79,7 +79,7 @@ std::map<std::pair<int, int>, int> paint(IntcodeComputer& computer, int start_co
 
         current_direction = rotate(current_direction, command);
         position = move(position, current_direction);
-    } while (!res.halted);
+    } while (res.type != TYPE_HALTED);
 
     return board;
 }

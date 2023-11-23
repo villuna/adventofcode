@@ -56,6 +56,11 @@ void IntcodeComputer::load_input(const std::vector<int64_t>& input) {
     input_index = 0;
 }
 
+void IntcodeComputer::push_input(int64_t input) {
+    this->input.push_back(input);
+    std::cout << "size: " << this->input.size() << ", index: " << input_index << std::endl;
+}
+
 void IntcodeComputer::set_input_at(int64_t index, int64_t value) {
     if (index < input.size()) {
         input[index] = value;
@@ -63,7 +68,11 @@ void IntcodeComputer::set_input_at(int64_t index, int64_t value) {
 }
 
 void IntcodeComputer::set_run_mode(run_mode mode) {
-    this->mode = mode;
+    this->r_mode = mode;
+}
+
+void IntcodeComputer::set_input_mode(input_mode mode) {
+    this->i_mode = mode;
 }
 
 run_result IntcodeComputer::run() {
@@ -77,7 +86,7 @@ run_result IntcodeComputer::run() {
         if (op_vec[0] == HALT) {
             return {
                 .code = output,
-                .halted = true,
+                .type = TYPE_HALTED,
             };
         }
 
@@ -96,10 +105,19 @@ run_result IntcodeComputer::run() {
             set_op(addr, a * b);
             pc += 4;
         } else if (op_vec[0] == INPUT) {
+            if (input_index >= input.size()) {
+                if (i_mode == WAIT_FOR_INPUT) {
+                    return {
+                        .code = 0,
+                        .type = TYPE_BLOCKING,
+                    };
+                }
+            }
+
             int64_t addr = wr_addr(op_vec, 1);
             set_op(addr, input[input_index]);
 
-            if (input_index < input.size() - 1) {
+            if (i_mode == WAIT_FOR_INPUT || input_index < input.size() - 1) {
                 input_index++;
             }
 
@@ -109,10 +127,10 @@ run_result IntcodeComputer::run() {
             output = addr;
             pc += 2;
 
-            if (mode == RETURN_ON_OUTPUT) {
+            if (r_mode == RETURN_ON_OUTPUT) {
                 return {
                     .code = output,
-                    .halted = false,
+                    .type = TYPE_OUTPUT,
                 };
             }
         } else if (op_vec[0] == JUMPIFTRUE) {
@@ -228,4 +246,8 @@ int64_t IntcodeComputer::wr_addr(std::vector<int64_t>& op_vec, int64_t offset) {
     } else {
         throw std::invalid_argument("unsupported write mode: " + std::to_string(mode));
     }
+}
+
+void IntcodeComputer::set_instruction_at(int64_t index, int64_t value) {
+    ops[index] = value;
 }

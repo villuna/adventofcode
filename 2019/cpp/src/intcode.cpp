@@ -58,7 +58,6 @@ void IntcodeComputer::load_input(const std::vector<int64_t>& input) {
 
 void IntcodeComputer::push_input(int64_t input) {
     this->input.push_back(input);
-    std::cout << "size: " << this->input.size() << ", index: " << input_index << std::endl;
 }
 
 void IntcodeComputer::set_input_at(int64_t index, int64_t value) {

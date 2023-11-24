@@ -13,7 +13,7 @@ static void (*functions[DAYS])() = {
     day1,
     day2,
     day3,
-    nullptr,
+    day4,
     day5,
     day6,
     day7,

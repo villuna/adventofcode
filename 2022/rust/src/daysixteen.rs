@@ -520,13 +520,15 @@ fn part_two(env: &HashMap<Label, Valve>) -> u16 {
             let mut frontier: HashSet<HelpedState> = HashSet::new();
             let mut spare: HashSet<HelpedState> = HashSet::new();
 
+            let mut level = 0;
             frontier.insert(HelpedState::start(start));
-            spare.insert(HelpedState::start(start));
 
             loop {
                 let state = if !frontier.is_empty() {
                     frontier.iter().next().unwrap()
                 } else if !spare.is_empty() {
+                    level += 1;
+                    println!("t = {level}, spare size = {}", spare.len());
                     std::mem::swap(&mut spare, &mut frontier);
                     frontier.iter().next().unwrap()
                 } else {

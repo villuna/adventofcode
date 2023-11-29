@@ -13,3 +13,4 @@ priority-queue = "1.3.0"
 rayon = "1.6.1"
 indicatif = {version = "*", features = ["rayon"]}
 init_with = "1.1.0"
+derivative = "2.2.0"

@@ -1,383 +1,413 @@
-use itertools::Itertools;
-use rayon::prelude::*;
-use regex::Regex;
-use std::sync::atomic::{AtomicU16, Ordering};
+use derivative::Derivative;
 use std::{
-    collections::{BTreeMap, HashMap, HashSet, VecDeque},
-    hash::Hash,
-    sync::atomic::AtomicU64,
-    vec::IntoIter,
+    cmp::Ordering,
+    collections::{BTreeSet, HashMap, HashSet, VecDeque},
 };
 
-const START_STATE: Label = ['A', 'A'];
-const MEMO_CAP: usize = 58720255;
+use itertools::Itertools;
 
-// This is a lot of types I know, but it really is worth it I swear.
-// I'm not addicted
-// I can stop at any time
+macro_rules! regex {
+    ($re:literal $(,)?) => {{
+        static RE: std::sync::OnceLock<regex::Regex> = std::sync::OnceLock::new();
+        RE.get_or_init(|| regex::Regex::new($re).unwrap())
+    }};
+}
 
 type Label = [char; 2];
 
-#[derive(Debug, Hash, PartialEq, Eq, Clone, PartialOrd, Ord)]
-struct Helper {
-    position: Label,
-    goal: Option<Label>,
-    progress: i8,
-    opening_valve: bool,
-}
-
-// A struct representing the current state of the world
-#[derive(Debug, Eq, Clone, Ord, PartialOrd)]
-struct State {
-    done: bool,
-    helpers: Vec<Helper>,
-    open_valves: Vec<Label>,
-    time: i8,
-}
+const START: Label = ['A', 'A'];
+const P1_MAX_TIME: u8 = 31;
+const P2_MAX_TIME: u8 = 27;
 
 #[derive(Debug)]
 struct Valve {
-    rate: i16,
-    edges: Vec<Label>,
+    rate: u16,
+    edges: HashMap<Label, u16>,
 }
 
-// A map representing the cave system
-struct Environment {
-    graph: HashMap<Label, Valve>,
-    distances: HashMap<Label, BTreeMap<Label, i8>>,
-}
+fn parse_environment(input: &str) -> HashMap<Label, Valve> {
+    let re = regex!(
+        r"Valve ([A-Z]{2}) has flow rate=(\d+); tunnels? leads? to valves? ([A-Z]{2}(:?, [A-Z]{2})*)"
+    );
+    let mut graph: HashMap<Label, (u16, Vec<Label>)> = HashMap::new();
 
-// An iterator that returns a topological ordering of the state graph
-// Uses iterative-deepening depth first search to return states in this order
-// High level cs stuff I know
-// thanks COMP3506
-//
-// The reason this is an iterator is because they can be lazy
-// I don't need to store the entire graph of possible states to find the
-// best path to the goal on a DAG.
-struct TopologicalOrdering<'a> {
-    env: &'a Environment,
-    max_time: i8,
-    time: i8,
-    first_state: State,
-    stack: Vec<std::vec::IntoIter<State>>,
-}
+    for line in input.lines() {
+        let captures = re.captures(line).unwrap();
+        let (l1, l2) = captures[1].chars().collect_tuple().unwrap();
+        let label = [l1, l2];
 
-impl Environment {
-    fn parse(input: &str) -> Environment {
-        let re = Regex::new(r"Valve ([A-Z]{2}) has flow rate=(\d+); tunnels? leads? to valves? ([A-Z]{2}(:?, [A-Z]{2})*)").unwrap();
-        let mut graph = HashMap::new();
+        let rate = captures[2].parse().unwrap();
 
-        for line in input.lines() {
-            let captures = re.captures(line).unwrap();
-            let (l1, l2) = captures[1].chars().collect_tuple().unwrap();
-            let label = [l1, l2];
+        let edges = captures[3]
+            .split(", ")
+            .map(|s| {
+                let (l1, l2) = s.chars().collect_tuple().unwrap();
+                [l1, l2]
+            })
+            .collect_vec();
 
-            let rate = captures[2].parse().unwrap();
-
-            let edges = captures[3]
-                .split(", ")
-                .map(|s| {
-                    let (l1, l2) = s.chars().collect_tuple().unwrap();
-                    [l1, l2]
-                })
-                .collect_vec();
-
-            graph.insert(label, Valve { rate, edges });
-        }
-
-        let distances = Self::calculate_distances(&graph);
-
-        Environment { graph, distances }
+        graph.insert(label, (rate, edges));
     }
 
-    fn calculate_distances(graph: &HashMap<Label, Valve>) -> HashMap<Label, BTreeMap<Label, i8>> {
-        // Find the shortest path between valves (of note) using dijkstra
-        let important_valves = graph
-            .iter()
-            .filter(|(&label, valve)| label == START_STATE || valve.rate > 0)
-            .map(|x| *x.0)
-            .collect_vec();
-        let mut res = HashMap::new();
+    // Now calculate distances between important valves
+    let mut reduced_graph = HashMap::new();
+    let important_valves = graph
+        .iter()
+        .filter(|&(label, (rate, _edges))| *label == START || *rate > 0);
 
-        for start in important_valves.iter() {
-            let mut queue = VecDeque::new();
-            let mut distances = BTreeMap::new();
-            let mut visited = HashSet::new();
+    for (label, (rate, _edges)) in important_valves {
+        // Use dijkstra's algorithm to calculate the shortest path between nodes
+        let mut queue = VecDeque::new();
+        let mut visited = HashSet::new();
+        let mut distances: HashMap<[char; 2], u16> = HashMap::new();
+        queue.push_back((*label, 0));
 
-            distances.insert(*start, 0);
-            queue.push_back(*start);
+        while let Some((next_label, distance)) = queue.pop_front() {
+            visited.insert(next_label);
 
-            while let Some(label) = queue.pop_front() {
-                visited.insert(label);
-                let distance = *distances.get(&label).unwrap();
-                let valve = graph.get(&label).unwrap();
+            if next_label != *label {
+                distances.insert(next_label, distance);
+            }
 
-                for edge in valve.edges.iter() {
-                    if !visited.contains(edge) && !queue.contains(edge) {
-                        distances.insert(*edge, distance + 1);
-                        queue.push_back(*edge);
+            let edges = graph.get(&next_label).unwrap().1.iter();
+
+            for edge in edges {
+                if !visited.contains(edge) {
+                    queue.push_back((*edge, distance + 1));
+                }
+            }
+        }
+
+        distances.retain(|label, _distance| graph.get(label).unwrap().0 > 0 && *label != START);
+
+        reduced_graph.insert(
+            *label,
+            Valve {
+                rate: *rate,
+                edges: distances,
+            },
+        );
+    }
+
+    reduced_graph
+}
+
+#[derive(Hash, PartialEq, Eq, Debug, Clone, Copy)]
+enum Action {
+    OpeningValve,
+    Moving(Label, u16),
+    Done,
+}
+
+impl PartialOrd for Action {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        // This implementation assumes the actions are coming from the same position
+        // if moving, the valve at the current position is assumed to be open
+        match self {
+            Action::OpeningValve => {
+                if self == other {
+                    Some(Ordering::Equal)
+                } else {
+                    Some(Ordering::Less)
+                }
+            }
+            Action::Moving(target, progress) => match other {
+                Action::Moving(other_target, other_progress) => {
+                    if target == other_target {
+                        Some(progress.cmp(other_progress))
+                    } else {
+                        None
                     }
                 }
-            }
 
-            distances.retain(|label, _| important_valves.contains(label) && *label != START_STATE);
-            res.insert(*start, distances);
-        }
+                Action::Done => Some(Ordering::Less),
 
-        res
-    }
-
-    fn get_valve(&self, label: &Label) -> Option<&Valve> {
-        self.graph.get(label)
-    }
-}
-
-impl Helper {
-    fn next_states(&self, env: &Environment, open_valves: &Vec<Label>) -> Vec<Helper> {
-        // If currently travelling, just move. Otherwise consider the state we end up at.
-        let current_state = if let Some(label) = self.goal {
-            if self.progress
-                < *env
-                    .distances
-                    .get(&self.position)
-                    .and_then(|map| map.get(&label))
-                    .unwrap()
-            {
-                return vec![Helper {
-                    progress: self.progress + 1,
-                    ..self.clone()
-                }];
-            } else {
-                Helper {
-                    position: label,
-                    progress: 0,
-                    goal: None,
-                    opening_valve: false,
+                Action::OpeningValve => Some(Ordering::Greater),
+            },
+            Action::Done => {
+                if self == other {
+                    Some(Ordering::Equal)
+                } else {
+                    Some(Ordering::Greater)
                 }
             }
-        } else {
-            self.clone()
-        };
-
-        // If the current valve is not open, open it.
-        if current_state.position != START_STATE && !open_valves.contains(&current_state.position) {
-            return vec![Helper {
-                opening_valve: true,
-                ..current_state
-            }];
         }
-
-        let mut res = Vec::new();
-        // Or we could move to any closed, notable valve
-        for (&valve, _) in env
-            .distances
-            .get(&current_state.position)
-            .unwrap()
-            .iter()
-            .filter(|(&valve, _)| valve != current_state.position && !open_valves.contains(&valve))
-        {
-            res.push(Helper {
-                opening_valve: false,
-                goal: Some(valve),
-                progress: 1,
-                ..current_state.clone()
-            })
-        }
-
-        if res.is_empty() {
-            res.push(current_state);
-        }
-
-        res
     }
 }
 
-impl State {
-    // Returns a vector of all the possible states reachable from this state
-    fn next_states(&self, env: &Environment, max_time: i8) -> Vec<State> {
-        if self.done {
+#[derive(Derivative, Debug, Clone, Eq)]
+#[derivative(Hash)]
+struct LoneState {
+    timestamp: u8,
+    position: Label,
+    open_valves: BTreeSet<Label>,
+    action: Action,
+    #[derivative(Hash = "ignore")]
+    pressure: u16,
+}
+
+impl PartialEq for LoneState {
+    fn eq(&self, other: &Self) -> bool {
+        self.is_better_than(other) || other.is_better_than(self)
+    }
+}
+
+impl LoneState {
+    fn start(target: Label) -> Self {
+        Self {
+            timestamp: 1,
+            position: START,
+            open_valves: BTreeSet::new(),
+            action: Action::Moving(target, 1),
+            pressure: 0,
+        }
+    }
+
+    fn is_better_than(&self, other: &LoneState) -> bool {
+        self.pressure >= other.pressure
+    }
+
+    fn edges(&self, env: &HashMap<Label, Valve>, max_time: u8) -> Vec<LoneState> {
+        if self.timestamp == max_time {
             return Vec::new();
         }
 
-        // if the time reaches 30, we're doneskis
-        if self.time == max_time {
-            return vec![State::done(max_time)];
-        }
-
-        // if all the (meaningful) valves are open, just don't do anything
-        if env
-            .graph
-            .iter()
-            .filter(|(_, valve)| valve.rate > 0)
-            .all(|(label, _)| self.open_valves.contains(label))
-        {
-            return vec![State {
-                time: max_time,
-                ..self.clone()
-            }];
-        }
-
-        let mut open_valves = self.open_valves.clone();
-
-        for helper in self.helpers.iter() {
-            if helper.opening_valve {
-                if open_valves.contains(&helper.position) {
-                    panic!("Opened a valve twice!!");
-                }
-
-                open_valves.push(helper.position);
-            }
-        }
-
-        let (helpers, time_step) = if self.helpers.iter().all(|helper| helper.goal.is_some()) {
-            let min_distance = self
-                .helpers
+        let pressure = self.pressure
+            + self
+                .open_valves
                 .iter()
-                .map(|helper| {
-                    env.distances
-                        .get(&helper.position)
-                        .unwrap()
-                        .get(&helper.goal.unwrap())
-                        .unwrap()
-                        - helper.progress
-                })
-                .min()
-                .unwrap();
+                .map(|valve| env.get(valve).unwrap().rate)
+                .sum::<u16>();
+        let timestamp = self.timestamp + 1;
 
-            (
-                self.helpers
-                    .iter()
-                    .map(|helper| Helper {
-                        progress: helper.progress + min_distance,
-                        ..helper.clone()
+        match self.action {
+            Action::Done => {
+                vec![Self {
+                    pressure,
+                    timestamp,
+                    ..self.clone()
+                }]
+            }
+
+            Action::OpeningValve => {
+                let mut valves = self.open_valves.clone();
+                valves.insert(self.position);
+
+                let next = env
+                    .keys()
+                    .filter(|&label| {
+                        *label != START
+                            && !valves.contains(label)
+                            && *env.get(&self.position).unwrap().edges.get(label).unwrap()
+                                < (max_time - timestamp) as u16
                     })
-                    .collect_vec(),
-                min_distance,
-            )
-        } else {
-            (self.helpers.clone(), 0)
-        };
+                    .map(|label| Self {
+                        open_valves: valves.clone(),
+                        pressure,
+                        timestamp,
+                        action: Action::Moving(*label, 1),
+                        position: self.position,
+                    })
+                    .collect::<Vec<_>>();
 
-        helpers
-            .iter()
-            .map(|helper| helper.next_states(env, &open_valves))
-            .multi_cartesian_product()
-            .filter(|helpers| helpers.iter().all_unique())
-            .map(|helpers| State {
-                done: false,
-                helpers,
-                open_valves: open_valves.clone(),
-                time: self.time + time_step + 1,
-            })
-            .collect_vec()
-    }
-
-    fn start(helpers: usize) -> State {
-        State {
-            done: false,
-            helpers: vec![
-                Helper {
-                    position: START_STATE,
-                    goal: None,
-                    progress: 0,
-                    opening_valve: false,
-                };
-                helpers
-            ],
-            open_valves: Vec::new(),
-            time: 0,
-        }
-    }
-
-    fn done(max_time: i8) -> State {
-        State {
-            done: true,
-            helpers: vec![], // Bye bye elephant
-            open_valves: Vec::new(),
-            time: max_time + 1,
-        }
-    }
-}
-
-impl PartialEq for State {
-    fn eq(&self, other: &Self) -> bool {
-        let mut self_helpers = self.helpers.clone();
-        let mut other_helpers = other.helpers.clone();
-        self_helpers.sort();
-        other_helpers.sort();
-
-        let mut self_valves = self.open_valves.clone();
-        let mut other_valves = other.open_valves.clone();
-        self_valves.sort();
-        other_valves.sort();
-
-        self.done == other.done
-            && self.time == other.time
-            && self_valves == other_valves
-            && self_helpers == other_helpers
-    }
-}
-
-impl Hash for State {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.done.hash(state);
-        self.time.hash(state);
-        let mut helpers = self.helpers.clone();
-        helpers.sort();
-        helpers.hash(state);
-        let mut valves = self.open_valves.clone();
-        valves.sort();
-        valves.hash(state);
-    }
-}
-
-impl TopologicalOrdering<'_> {
-    fn new(env: &Environment, max_time: i8, helpers: usize) -> TopologicalOrdering {
-        let first_state = State::start(helpers);
-        let stack = vec![vec![first_state.clone()].into_iter()];
-
-        TopologicalOrdering {
-            env,
-            max_time,
-            time: 0,
-            first_state,
-            stack,
-        }
-    }
-}
-
-impl Iterator for TopologicalOrdering<'_> {
-    // Returns the next state to check, and all the predecessors of that state
-    type Item = State;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        while self.time <= self.max_time + 1 {
-            // Perform IDDFS until we run out of states
-            while let Some(mut top) = self.stack.pop() {
-                if let Some(state) = top.next() {
-                    self.stack.push(top);
-
-                    if state.time == self.time {
-                        return Some(state);
-                    } else if state.time < self.time {
-                        self.stack
-                            .push(state.next_states(self.env, self.max_time).into_iter());
-                    }
+                if next.is_empty() {
+                    vec![Self {
+                        pressure,
+                        timestamp,
+                        action: Action::Done,
+                        open_valves: valves,
+                        position: self.position,
+                    }]
+                } else {
+                    next
                 }
             }
 
-            self.stack = vec![vec![self.first_state.clone()].into_iter()];
-            self.time += 1;
+            Action::Moving(target, distance) => {
+                let distance_to_cover =
+                    *env.get(&self.position).unwrap().edges.get(&target).unwrap();
+
+                if distance < distance_to_cover {
+                    vec![Self {
+                        pressure,
+                        timestamp,
+                        action: Action::Moving(target, distance + 1),
+                        ..self.clone()
+                    }]
+                } else if distance == distance_to_cover {
+                    vec![Self {
+                        pressure,
+                        timestamp,
+                        action: Action::OpeningValve,
+                        position: target,
+                        ..self.clone()
+                    }]
+                } else {
+                    panic!("should not have overshot the distance");
+                }
+            }
+        }
+    }
+}
+
+#[derive(Derivative, Debug, Clone, Eq)]
+#[derivative(Hash)]
+struct HelpedState {
+    timestamp: u8,
+    positions: [Label; 2],
+    open_valves: BTreeSet<Label>,
+    actions: [Action; 2],
+    #[derivative(Hash = "ignore")]
+    pressure: u16,
+}
+
+impl PartialEq for HelpedState {
+    fn eq(&self, other: &Self) -> bool {
+        self.is_better_than(other) || other.is_better_than(self)
+    }
+}
+
+impl HelpedState {
+    fn start(targets: [Label; 2]) -> Self {
+        Self {
+            timestamp: 1,
+            positions: [START, START],
+            open_valves: BTreeSet::new(),
+            actions: [Action::Moving(targets[0], 1), Action::Moving(targets[1], 1)],
+            pressure: 0,
+        }
+    }
+
+    /*
+    fn eq_real(&self, other: &Self) -> bool {
+        let positions_equal = (self.positions[0] == other.positions[0]
+            && self.positions[1] == other.positions[1])
+            || (self.positions[0] == other.positions[1] && self.positions[1] == other.positions[0]);
+        let actions_equal = (self.actions[0] == other.actions[0]
+            && self.actions[1] == other.actions[1])
+            || (self.actions[0] == other.actions[1] && self.actions[1] == other.actions[0]);
+
+        self.timestamp == other.timestamp
+            && positions_equal
+            && self.open_valves == other.open_valves
+            && actions_equal
+            && self.pressure == other.pressure
+    }
+    */
+
+    fn is_better_than(&self, other: &Self) -> bool {
+        self.pressure >= other.pressure
+    }
+
+    fn edges(&self, env: &HashMap<Label, Valve>) -> Vec<Self> {
+        if self.timestamp == P2_MAX_TIME {
+            return Vec::new();
         }
 
-        None
+        let pressure = self.pressure
+            + self
+                .open_valves
+                .iter()
+                .map(|valve| env.get(valve).unwrap().rate)
+                .sum::<u16>();
+        let timestamp = self.timestamp + 1;
+
+        if matches!(self.actions[0], Action::OpeningValve)
+            && matches!(self.actions[1], Action::OpeningValve)
+        {
+            let mut valves = self.open_valves.clone();
+            valves.insert(self.positions[0]);
+            valves.insert(self.positions[1]);
+
+            let next0 = env.keys().filter(|&label| {
+                *label != START
+                    && !valves.contains(label)
+                    && *env
+                        .get(&self.positions[0])
+                        .unwrap()
+                        .edges
+                        .get(label)
+                        .unwrap()
+                        < (P2_MAX_TIME - timestamp) as u16
+            });
+
+            let next1 = env.keys().filter(|&label| {
+                *label != START
+                    && !valves.contains(label)
+                    && *env
+                        .get(&self.positions[1])
+                        .unwrap()
+                        .edges
+                        .get(label)
+                        .unwrap()
+                        < (P2_MAX_TIME - timestamp) as u16
+            });
+
+            let mut res = Vec::new();
+            for (t1, t2) in next0.cartesian_product(next1) {
+                if t1 == t2 {
+                    continue;
+                }
+
+                res.push(Self {
+                    timestamp,
+                    positions: self.positions,
+                    open_valves: valves.clone(),
+                    actions: [Action::Moving(*t1, 1), Action::Moving(*t2, 1)],
+                    pressure,
+                });
+            }
+
+            if res.is_empty() {
+                vec![Self { timestamp, positions: self.positions, open_valves: valves, actions: [Action::Done, Action::Done], pressure }]
+            } else {
+                res
+            }
+        } else {
+            let (l1, l2) = self.mitosis();
+
+            let e1 = l1.edges(env, P2_MAX_TIME);
+            let e2 = l2.edges(env, P2_MAX_TIME);
+
+            e1.iter().cartesian_product(e2.iter())
+                .map(|(s1, s2)| Self::fusion_dance(s1, s2))
+                .collect::<Vec<_>>()
+        }
+    }
+
+    fn mitosis(&self) -> (LoneState, LoneState) {
+        (
+            LoneState {
+                timestamp: self.timestamp,
+                position: self.positions[0],
+                open_valves: self.open_valves.clone(),
+                action: self.actions[0],
+                pressure: self.pressure,
+            },
+            LoneState {
+                timestamp: self.timestamp,
+                position: self.positions[1],
+                open_valves: self.open_valves.clone(),
+                action: self.actions[1],
+                pressure: self.pressure,
+            }
+        )
+    }
+
+    fn fusion_dance(l1: &LoneState, l2: &LoneState) -> Self {
+        Self {
+            timestamp: l1.timestamp,
+            positions: [l1.position, l2.position],
+            open_valves: l1.open_valves.union(&l2.open_valves).cloned().collect::<BTreeSet<_>>(),
+            actions: [l1.action, l2.action],
+            pressure: l1.pressure,
+        }
     }
 }
 
 pub fn day_sixteen(input: String) {
     /*
-        let input = "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
+    let input = "Valve AA has flow rate=0; tunnels lead to valves DD, II, BB
     Valve BB has flow rate=13; tunnels lead to valves CC, AA
     Valve CC has flow rate=2; tunnels lead to valves DD, BB
     Valve DD has flow rate=20; tunnels lead to valves CC, AA, EE
@@ -387,125 +417,141 @@ pub fn day_sixteen(input: String) {
     Valve HH has flow rate=22; tunnel leads to valve GG
     Valve II has flow rate=0; tunnels lead to valves AA, JJ
     Valve JJ has flow rate=21; tunnel leads to valve II";
-        */
-    let env = Environment::parse(&input);
-
-    // Part 1
-    //println!("{}", better_best_path(&env, 30, false));
-
-    // Part 2
-    println!("{}", better_best_path(&env, 26, true));
+    */
+    let env = parse_environment(&input);
+    println!("part 1: {}", part_one(&env));
+    println!("part 2: {}", part_two(&env));
 }
 
-fn better_best_path(env: &Environment, max_time: i8, elephant: bool) -> i16 {
-    // This is effectively DFS with a depth limit. Hope it works. Fingers crossed.
-    let helpers = if elephant { 2 } else { 1 };
-    let first_state = State::start(helpers);
+fn part_one(env: &HashMap<Label, Valve>) -> u16 {
+    // Use BFS to find the optimal solution
+    let mut max = 0;
+    let mut max_spare_size = 0;
+    // Our frontier contains all the states that we want to consider expanding next.
+    let mut frontier: HashSet<LoneState> = HashSet::new();
+    let mut spare: HashSet<LoneState> = HashSet::new();
 
-    first_state
-        .next_states(env, max_time)
-        .into_par_iter()
-        .map(|start_state| {
-            let mut stack: Vec<IntoIter<(State, i16)>> =
-                vec![vec![(start_state.clone(), 0)].into_iter()];
-            let mut max_pressure = 0;
-            //let mut pressures: HashMap<State, i16> = HashMap::new();
+    let mut level = 0;
 
-            // Perform IDDFS until we run out of states
-            while let Some(mut top) = stack.pop() {
-                if let Some((state, pressure)) = top.next() {
-                    stack.push(top);
+    for edge in env.keys() {
+        if *edge != START {
+            frontier.insert(LoneState::start(*edge));
+            spare.insert(LoneState::start(*edge));
+        }
+    }
 
-                    //if let Some(true) = pressures.get(&state).map(|current_best| *current_best > pressure) {
-                    //    continue;
-                    //}
+    loop {
+        let state = if !frontier.is_empty() {
+            frontier.iter().next().unwrap()
+        } else if !spare.is_empty() {
+            level += 1;
+            if spare.len() > max_spare_size {
+                max_spare_size = spare.len();
+            }
+            std::mem::swap(&mut spare, &mut frontier);
+            frontier.iter().next().unwrap()
+        } else {
+            break;
+        }
+        .clone();
 
-                    //if state.time == time && pressures.len() < MEMO_CAP {
-                    //    pressures.insert(state.clone(), pressure);
-                    //}
+        frontier.remove(&state);
 
-                    let pressure_released: i16 = state
-                        .open_valves
-                        .iter()
-                        .map(|label| env.get_valve(label).unwrap().rate)
-                        .sum();
+        if state.pressure > max {
+            max = state.pressure;
+        }
 
-                    if state.done {
-                        if pressure > max_pressure {
-                            max_pressure = pressure;
-                        }
-                    } else if state.time <= max_time {
-                        stack.push(
-                            state
-                                .next_states(env, max_time)
-                                .into_iter()
-                                .map(|new_state| {
-                                    let new_time = new_state.time;
-                                    (
-                                        new_state,
-                                        pressure
-                                            + pressure_released * (new_time - state.time) as i16,
-                                    )
-                                })
-                                .collect_vec()
-                                .into_iter(),
-                        );
+        let edges = state.edges(env, P1_MAX_TIME);
+
+        for next_state in edges {
+            match spare.get(&next_state) {
+                Some(entry) => {
+                    if next_state.is_better_than(entry) {
+                        spare.replace(next_state.clone());
+                    } else {
+                        continue;
                     }
                 }
-            }
 
-            max_pressure
-        })
-        .max()
-        .unwrap()
-}
-
-fn best_path(env: &Environment, max_time: i8, elephant: bool) -> i16 {
-    // Since the graph of states is a directed acyclic graph (as you can't go back in time :P)
-    // we can find a "shortest path" using negative values!
-    let helpers = if elephant { 2 } else { 1 };
-
-    let states = TopologicalOrdering::new(env, max_time, helpers);
-    let mut pressures: HashMap<State, i16> = HashMap::new();
-    let mut time = -1;
-
-    pressures.insert(State::start(helpers), 0);
-
-    for state in states {
-        if state.time > time {
-            time = state.time;
-            println!("t = {time}");
-        }
-
-        let Some(current_pressure) = pressures.remove(&state) else {
-            // Already visited this state, so continue
-            continue;
-        };
-
-        if state.done {
-            return -1 * current_pressure;
-        }
-
-        let pressure_released: i16 = state
-            .open_valves
-            .iter()
-            .map(|label| env.get_valve(label).unwrap().rate)
-            .sum();
-
-        for new_state in state.next_states(env, max_time) {
-            let new_time = new_state.time;
-
-            if !pressures.contains_key(&new_state)
-                || *pressures.get(&new_state).unwrap()
-                    > current_pressure - pressure_released * (new_time - state.time) as i16
-            {
-                pressures.insert(
-                    new_state,
-                    current_pressure - pressure_released * (new_time - state.time) as i16,
-                );
+                None => {
+                    spare.insert(next_state.clone());
+                }
             }
         }
     }
 
-    panic!("Ran out of states!");
+    println!("max spare size: {max_spare_size}");
+    max
+}
+
+fn part_two(env: &HashMap<Label, Valve>) -> u16 {
+    // Use BFS to find the optimal solution
+    let mut max = 0;
+    let mut max_spare_size = 0;
+    // Our frontier contains all the states that we want to consider expanding next.
+    let mut frontier: HashSet<HelpedState> = HashSet::new();
+    let mut spare: HashSet<HelpedState> = HashSet::new();
+
+    let mut level = 0;
+
+    let keys = env.keys().cloned().collect::<Vec<_>>();
+
+    for i1 in 1..keys.len() {
+        if keys[i1] == START {
+            continue;
+        }
+
+        for i2 in 0..i1 {
+            if keys[i2] == START {
+                continue;
+            }
+
+            frontier.insert(HelpedState::start([keys[i1], keys[i2]]));
+            spare.insert(HelpedState::start([keys[i1], keys[i2]]));
+        }
+    }
+
+    loop {
+        let state = if !frontier.is_empty() {
+            frontier.iter().next().unwrap()
+        } else if !spare.is_empty() {
+            level += 1;
+            if spare.len() > max_spare_size {
+                max_spare_size = spare.len();
+            }
+            println!("part {level} - spare size {}", spare.len());
+            std::mem::swap(&mut spare, &mut frontier);
+            frontier.iter().next().unwrap()
+        } else {
+            break;
+        }
+        .clone();
+
+        frontier.remove(&state);
+
+        if state.pressure > max {
+            max = state.pressure;
+        }
+
+        let edges = state.edges(env);
+
+        for next_state in edges {
+            match spare.get(&next_state) {
+                Some(entry) => {
+                    if next_state.is_better_than(entry) {
+                        spare.replace(next_state.clone());
+                    } else {
+                        continue;
+                    }
+                }
+
+                None => {
+                    spare.insert(next_state.clone());
+                }
+            }
+        }
+    }
+
+    println!("max spare size: {max_spare_size}");
+    max
 }

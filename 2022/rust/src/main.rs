@@ -39,10 +39,7 @@ fn input(day: usize) -> Result<String, io::Error> {
 }
 
 fn main() {
-    let Some(day) = env::args()
-        .nth(1)
-        .and_then(|s| s.parse::<usize>().ok())
-    else {
+    let Some(day) = env::args().nth(1).and_then(|s| s.parse::<usize>().ok()) else {
         println!("Please pass the day you want to solve");
         return;
     };

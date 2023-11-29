@@ -1,4 +1,11 @@
+// THIS FINALLY WORKS OH MY GOD
+// I spent so much time on this last year and it's what ultimately stopped me
+// but it's finally finished
+//
+// This solution will take maybe 10 minutes to run and will use up all your cpu
+// sorry but thats just the kind of problem this is
 use derivative::Derivative;
+use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::{
     cmp::Ordering,
     collections::{BTreeSet, HashMap, HashSet, VecDeque},
@@ -359,7 +366,13 @@ impl HelpedState {
             }
 
             if res.is_empty() {
-                vec![Self { timestamp, positions: self.positions, open_valves: valves, actions: [Action::Done, Action::Done], pressure }]
+                vec![Self {
+                    timestamp,
+                    positions: self.positions,
+                    open_valves: valves,
+                    actions: [Action::Done, Action::Done],
+                    pressure,
+                }]
             } else {
                 res
             }
@@ -369,7 +382,8 @@ impl HelpedState {
             let e1 = l1.edges(env, P2_MAX_TIME);
             let e2 = l2.edges(env, P2_MAX_TIME);
 
-            e1.iter().cartesian_product(e2.iter())
+            e1.iter()
+                .cartesian_product(e2.iter())
                 .map(|(s1, s2)| Self::fusion_dance(s1, s2))
                 .collect::<Vec<_>>()
         }
@@ -390,7 +404,7 @@ impl HelpedState {
                 open_valves: self.open_valves.clone(),
                 action: self.actions[1],
                 pressure: self.pressure,
-            }
+            },
         )
     }
 
@@ -398,7 +412,11 @@ impl HelpedState {
         Self {
             timestamp: l1.timestamp,
             positions: [l1.position, l2.position],
-            open_valves: l1.open_valves.union(&l2.open_valves).cloned().collect::<BTreeSet<_>>(),
+            open_valves: l1
+                .open_valves
+                .union(&l2.open_valves)
+                .cloned()
+                .collect::<BTreeSet<_>>(),
             actions: [l1.action, l2.action],
             pressure: l1.pressure,
         }
@@ -426,12 +444,9 @@ pub fn day_sixteen(input: String) {
 fn part_one(env: &HashMap<Label, Valve>) -> u16 {
     // Use BFS to find the optimal solution
     let mut max = 0;
-    let mut max_spare_size = 0;
     // Our frontier contains all the states that we want to consider expanding next.
     let mut frontier: HashSet<LoneState> = HashSet::new();
     let mut spare: HashSet<LoneState> = HashSet::new();
-
-    let mut level = 0;
 
     for edge in env.keys() {
         if *edge != START {
@@ -444,10 +459,6 @@ fn part_one(env: &HashMap<Label, Valve>) -> u16 {
         let state = if !frontier.is_empty() {
             frontier.iter().next().unwrap()
         } else if !spare.is_empty() {
-            level += 1;
-            if spare.len() > max_spare_size {
-                max_spare_size = spare.len();
-            }
             std::mem::swap(&mut spare, &mut frontier);
             frontier.iter().next().unwrap()
         } else {
@@ -480,22 +491,12 @@ fn part_one(env: &HashMap<Label, Valve>) -> u16 {
         }
     }
 
-    println!("max spare size: {max_spare_size}");
     max
 }
 
 fn part_two(env: &HashMap<Label, Valve>) -> u16 {
-    // Use BFS to find the optimal solution
-    let mut max = 0;
-    let mut max_spare_size = 0;
-    // Our frontier contains all the states that we want to consider expanding next.
-    let mut frontier: HashSet<HelpedState> = HashSet::new();
-    let mut spare: HashSet<HelpedState> = HashSet::new();
-
-    let mut level = 0;
-
+    let mut start_states = Vec::new();
     let keys = env.keys().cloned().collect::<Vec<_>>();
-
     for i1 in 1..keys.len() {
         if keys[i1] == START {
             continue;
@@ -506,52 +507,60 @@ fn part_two(env: &HashMap<Label, Valve>) -> u16 {
                 continue;
             }
 
-            frontier.insert(HelpedState::start([keys[i1], keys[i2]]));
-            spare.insert(HelpedState::start([keys[i1], keys[i2]]));
+            start_states.push([keys[i1], keys[i2]]);
         }
     }
 
-    loop {
-        let state = if !frontier.is_empty() {
-            frontier.iter().next().unwrap()
-        } else if !spare.is_empty() {
-            level += 1;
-            if spare.len() > max_spare_size {
-                max_spare_size = spare.len();
-            }
-            println!("part {level} - spare size {}", spare.len());
-            std::mem::swap(&mut spare, &mut frontier);
-            frontier.iter().next().unwrap()
-        } else {
-            break;
-        }
-        .clone();
+    start_states
+        .into_par_iter()
+        .map(|start| {
+            // Use BFS to find the optimal solution
+            let mut max = 0;
+            // Our frontier contains all the states that we want to consider expanding next.
+            let mut frontier: HashSet<HelpedState> = HashSet::new();
+            let mut spare: HashSet<HelpedState> = HashSet::new();
 
-        frontier.remove(&state);
+            frontier.insert(HelpedState::start(start));
+            spare.insert(HelpedState::start(start));
 
-        if state.pressure > max {
-            max = state.pressure;
-        }
+            loop {
+                let state = if !frontier.is_empty() {
+                    frontier.iter().next().unwrap()
+                } else if !spare.is_empty() {
+                    std::mem::swap(&mut spare, &mut frontier);
+                    frontier.iter().next().unwrap()
+                } else {
+                    break;
+                }
+                .clone();
 
-        let edges = state.edges(env);
+                frontier.remove(&state);
 
-        for next_state in edges {
-            match spare.get(&next_state) {
-                Some(entry) => {
-                    if next_state.is_better_than(entry) {
-                        spare.replace(next_state.clone());
-                    } else {
-                        continue;
+                if state.pressure > max {
+                    max = state.pressure;
+                }
+
+                let edges = state.edges(env);
+
+                for next_state in edges {
+                    match spare.get(&next_state) {
+                        Some(entry) => {
+                            if next_state.is_better_than(entry) {
+                                spare.replace(next_state.clone());
+                            } else {
+                                continue;
+                            }
+                        }
+
+                        None => {
+                            spare.insert(next_state.clone());
+                        }
                     }
                 }
-
-                None => {
-                    spare.insert(next_state.clone());
-                }
             }
-        }
-    }
 
-    println!("max spare size: {max_spare_size}");
-    max
+            max
+        })
+        .max()
+        .unwrap()
 }

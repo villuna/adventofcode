@@ -1,9 +1,6 @@
 // THIS FINALLY WORKS OH MY GOD
 // I spent so much time on this last year and it's what ultimately stopped me
 // but it's finally finished
-//
-// This solution will take maybe 10 minutes to run and will use up all your cpu
-// sorry but thats just the kind of problem this is
 use derivative::Derivative;
 use rayon::prelude::{IntoParallelIterator, ParallelIterator};
 use std::{

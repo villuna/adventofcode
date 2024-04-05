@@ -11,6 +11,9 @@ build: $(OBJS) $(LIBS)
 debug: CXXFLAGS += -g
 debug: build
 
+release: CXXFLAGS += -O2
+release: build
+
 obj/%.o: src/%.cpp src/*.hpp | obj
 	$(CXX) $< -c -o $@ $(CXXFLAGS)
 

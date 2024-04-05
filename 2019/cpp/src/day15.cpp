@@ -1,3 +1,5 @@
+// This is like
+// the best c++ code ive ever written
 #include "days.hpp"
 #include "util.hpp"
 #include "intcode.hpp"

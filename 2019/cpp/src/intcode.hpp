@@ -25,6 +25,8 @@ enum result_type {
     TYPE_BLOCKING,
 };
 
+std::string result_type_desc(result_type type);
+
 // Really wish I had a rust enum rn
 struct run_result {
     int64_t code;

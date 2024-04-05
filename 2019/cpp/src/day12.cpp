@@ -1,5 +1,4 @@
 #include "days.hpp"
-#include "util.hpp"
 #include <cmath>
 #include <cstdint>
 #include <cstring>

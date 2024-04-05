@@ -1,4 +1,3 @@
-#include <iostream>
 #include <stdexcept>
 #include <cstdint>
 #include "intcode.hpp"
@@ -22,6 +21,22 @@ enum mode {
     IMMEDIATE = 1,
     RELATIVE = 2,
 };
+
+std::string result_type_desc(result_type type) {
+    switch (type) {
+        case TYPE_HALTED:
+            return "halted";
+            break;
+        case TYPE_OUTPUT:
+            return "returned output";
+            break;
+        case TYPE_BLOCKING:
+            return "waiting for input";
+            break;
+    }
+
+    throw std::runtime_error("invalid result_type variant");
+}
 
 std::vector<int64_t> read_op(int64_t op) {
     std::vector<int64_t> out;

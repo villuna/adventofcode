@@ -1,10 +1,30 @@
 #include "util.hpp"
 
+#include <cstdlib>
 #include <fstream>
 #include <stdexcept>
 #include <string>
 #include <vector>
-#include <iostream>
+
+bool operator==(const coord lhs, const coord rhs) {
+    return lhs.x == rhs.x && lhs.y == rhs.y;
+}
+
+coord operator+(const coord lhs, const coord rhs) {
+    return {.x = lhs.x + rhs.x, .y = lhs.y + rhs.y};
+}
+
+coord operator-(const coord lhs, const coord rhs) {
+    return {.x = lhs.x - rhs.x, .y = lhs.y - rhs.y};
+}
+
+coord make_coord(int x, int y) {
+    return {.x = x, .y = y};
+}
+
+int coord::norm() {
+    return std::abs(x) + std::abs(y);
+}
 
 std::string read_input(int day) {
     std::string filename = "../input/day" + std::to_string(day) + ".txt";

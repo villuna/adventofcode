@@ -1,12 +1,12 @@
 ﻿using AoCs;
 using Framework;
 
+// Parse input argument (the day to solve)
 if (args.Length != 1) {
     Console.WriteLine("Usage: aocs [day]");
     return -1;
 }
 
-Dictionary<int, IDay> days = new() { { 1, new Day1() } };
 int dayNo;
 
 if (!int.TryParse(args[0], out dayNo)) {
@@ -14,11 +14,19 @@ if (!int.TryParse(args[0], out dayNo)) {
     return -1;
 }
 
-if (!days.ContainsKey(dayNo)) {
+// A collection of day solver classes
+// which we will use to access the correct solution
+Dictionary<int, IDay> days = new() { 
+    { 1, new Day1() },
+    { 2, new Day2() },
+};
+
+if (!days.TryGetValue(dayNo, out IDay? day)) {
     Console.WriteLine($"Day {dayNo} not completed");
     return -1;
 }
 
+// Read input file
 string contents;
 
 try {
@@ -29,6 +37,6 @@ try {
     return -1;
 }
 
-days[dayNo].Solve(contents);
+day.Solve(contents);
 
 return 0;

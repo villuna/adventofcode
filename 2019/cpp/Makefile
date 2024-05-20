@@ -1,18 +1,15 @@
 CXX=g++
 RUSTC=rustc
 RUSTCFLAGS=+nightly --crate-type=staticlib -C panic=abort -C opt-level=3
-CXXFLAGS=-std=c++17 -Isrc
+CXXFLAGS=-std=c++17 -Isrc -O2 -ltbb
 OBJS=$(patsubst src/%.cpp,obj/%.o,$(wildcard src/*.cpp))
 LIBS=lib/librust.a
 
 build: $(OBJS) $(LIBS)
-	$(CXX) $^ -L ./lib -l rust -o aocpp $(CXXFLAGS)
+	$(CXX) $^ -L ./lib -lrust -larmadillo -o aocpp $(CXXFLAGS)
 
 debug: CXXFLAGS += -g
 debug: build
-
-release: CXXFLAGS += -O2
-release: build
 
 obj/%.o: src/%.cpp src/*.hpp | obj
 	$(CXX) $< -c -o $@ $(CXXFLAGS)

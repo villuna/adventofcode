@@ -37,6 +37,7 @@ namespace std {
     };
 }
 
+std::string strip(std::string input);
 std::string read_input(int day);
 std::vector<std::string> read_input_lines(int day);
 std::vector<std::string> split_string(const std::string& in, const std::string& delimiter);

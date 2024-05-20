@@ -1,5 +1,6 @@
 #include "util.hpp"
 
+#include <cctype>
 #include <cstdlib>
 #include <fstream>
 #include <stdexcept>
@@ -24,6 +25,28 @@ coord make_coord(int x, int y) {
 
 int coord::norm() {
     return std::abs(x) + std::abs(y);
+}
+
+std::string strip(std::string input) {
+    std::string output;
+    int begin = 0;
+
+    for (auto c = input.begin(); c != input.end(); c++) {
+        if (std::isspace(static_cast<unsigned char>(*c))) {
+            begin++;
+        } else {
+            break;
+        }
+    }
+
+    int end;
+    for (end = input.length(); end > begin; end--) {
+        if (!std::isspace(static_cast<unsigned char>(input[end - 1]))) {
+            break;
+        }
+    }
+
+    return input.substr(begin, end - begin);
 }
 
 std::string read_input(int day) {

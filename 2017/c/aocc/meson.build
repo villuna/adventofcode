@@ -1,0 +1,1 @@
+executable('aocc', ['main.c'])

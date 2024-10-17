@@ -1,5 +1,6 @@
 days = [
   '1',
+  '2',
 ]
 
 foreach d : days

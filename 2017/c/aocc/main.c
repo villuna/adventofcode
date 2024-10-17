@@ -12,11 +12,6 @@ int main(int argc, char **argv) {
         return -1;
     }
 
-    char *name_buffer;
-    if (asprintf(&name_buffer, "build/days/day%s", argv[1]) < 0) {
-        err(-1, "Could not create string buffer");
-    }
-
     char *filename_buffer;
     if (asprintf(&filename_buffer, "../input/day%s.txt", argv[1]) < 0) {
         err(-1, "Could not create string buffer");
@@ -29,6 +24,8 @@ int main(int argc, char **argv) {
                 filename_buffer);
         return -1;
     }
+
+    free(filename_buffer);
 
     // This runner will create a parent and child process. The child process will be the solution,
     // and the parent process will run the child and gather data about how it runs.
@@ -48,7 +45,7 @@ int main(int argc, char **argv) {
 
     pid_t child;
     if ((child = fork())) {
-        // Parent process.
+        // Parent process
         close(fds[1]);
         FILE *pipe = fdopen(fds[0], "r");
 
@@ -63,11 +60,16 @@ int main(int argc, char **argv) {
 
         while ((len = getline(&line, &cap, pipe)) >= 0) {
             printf("> %s", line);
-
-            free(line);
-            line = NULL;
         }
+
+        free(line);
     } else {
+        // Child process
+        char *name_buffer;
+        if (asprintf(&name_buffer, "build/days/day%s", argv[1]) < 0) {
+            err(-1, "Could not create string buffer");
+        }
+
         dup2(fds[1], STDOUT_FILENO);
         close(fds[0]);
         dup2(input_file, STDIN_FILENO);

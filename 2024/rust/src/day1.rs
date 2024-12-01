@@ -5,10 +5,14 @@ fn count(x: i32, list: &[i32]) -> i32 {
     list.iter().filter(|y| **y == x).count() as i32
 }
 
+fn parse_tuple(line: &str) -> (i32, i32) {
+    line.split_whitespace().map(|n| n.parse::<i32>().unwrap()).collect_tuple().unwrap()
+}
+
 pub fn day1(input: String, ctx: &mut AOContext) {
     let (mut l1, mut l2): (Vec<i32>, Vec<i32>) = input
         .lines()
-        .map(|l| l.split_whitespace().map(|n| n.parse::<i32>().unwrap()).collect_tuple().unwrap())
+        .map(parse_tuple)
         .unzip();
 
     ctx.parsing_done();

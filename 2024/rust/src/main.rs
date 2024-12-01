@@ -67,7 +67,7 @@ impl AOContext {
         println!("part 2: {result}");
 
         if self.time {
-            println!("");
+            println!();
             let p2_time = self.now.elapsed().as_secs_f64() * 1000.0;
             if let Some(parsing) = self.parsing_time {
                 println!("parsing took {:.2}ms", parsing);
@@ -83,7 +83,7 @@ impl AOContext {
         println!("part 1: {p1}\npart 2: {p2}");
 
         if self.time {
-            println!("");
+            println!();
             let time = self.now.elapsed().as_secs_f64() * 1000.0;
             if let Some(parsing) = self.parsing_time {
                 println!("parsing took {:.2}ms", parsing);

@@ -18,8 +18,7 @@ macro_rules! days_decl {
     }
 }
 
-// merry christmas!
-days_decl!(DAYS: 1);
+days_decl!(DAYS: 1, 2);
 
 #[derive(Parser)]
 struct Args {

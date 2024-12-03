@@ -28,9 +28,8 @@ pub fn day3(input: String, ctx: &mut AOContext) {
         } else if &cap[0] == "don\'t()" {
             doing = false;
         } else if doing {
-            let (_, [n1, n2]) = re.captures_iter(&cap[0]).next().unwrap().extract();
-            let n1: i32 = n1.parse().unwrap();
-            let n2: i32 = n2.parse().unwrap();
+            let n1: i32 = cap[1].parse().unwrap();
+            let n2: i32 = cap[2].parse().unwrap();
 
             part2 += n1 * n2;
         }

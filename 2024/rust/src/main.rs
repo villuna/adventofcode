@@ -52,7 +52,8 @@ impl AOContext {
 
     pub fn lap(&mut self, lap_name: impl Into<String>) {
         if self.time {
-            self.laps.push((lap_name.into(), self.now.elapsed().as_secs_f64() * 1000.0));
+            self.laps
+                .push((lap_name.into(), self.now.elapsed().as_secs_f64() * 1000.0));
             self.now = Instant::now();
         }
     }
@@ -78,7 +79,7 @@ impl AOContext {
         if self.time {
             let total = self.start.elapsed().as_secs_f64() * 1000.0;
             println!();
-            
+
             for (name, time) in self.laps.iter() {
                 println!("{name} took {time:.2}ms");
             }

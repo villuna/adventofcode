@@ -18,7 +18,7 @@ macro_rules! days_decl {
     }
 }
 
-days_decl!(DAYS: 1, 2);
+days_decl!(DAYS: 1, 2, 3);
 
 #[derive(Parser)]
 struct Args {
@@ -30,64 +30,61 @@ struct Args {
 }
 
 struct AOContext {
+    start: Instant,
     now: Instant,
-    parsing_time: Option<f64>,
-    p1_time: f64,
+    laps: Vec<(String, f64)>,
     time: bool,
 }
 
 impl AOContext {
     fn new(time: bool) -> AOContext {
         AOContext {
+            start: Instant::now(),
             now: Instant::now(),
-            parsing_time: None,
-            p1_time: 0.0,
+            laps: Vec::new(),
             time,
         }
     }
 
     pub fn parsing_done(&mut self) {
+        self.lap("parsing");
+    }
+
+    pub fn lap(&mut self, lap_name: impl Into<String>) {
         if self.time {
-            self.parsing_time = Some(self.now.elapsed().as_secs_f64() * 1000.0);
+            self.laps.push((lap_name.into(), self.now.elapsed().as_secs_f64() * 1000.0));
             self.now = Instant::now();
         }
     }
 
     pub fn submit_part1<T: Display>(&mut self, result: T) {
         println!("part 1: {result}");
-
-        if self.time {
-            self.p1_time = self.now.elapsed().as_secs_f64() * 1000.0;
-            self.now = Instant::now();
-        }
+        self.lap("part 1");
     }
 
     pub fn submit_part2<T: Display>(&mut self, result: T) {
         println!("part 2: {result}");
-
-        if self.time {
-            println!();
-            let p2_time = self.now.elapsed().as_secs_f64() * 1000.0;
-            if let Some(parsing) = self.parsing_time {
-                println!("parsing took {:.2}ms", parsing);
-            }
-            println!(
-                "part 1 took {:.2}ms\npart 2 took {:.2}ms",
-                self.p1_time, p2_time
-            );
-        }
+        self.lap("part 2");
+        self.print_times();
     }
 
     pub fn submit_both<P1: Display, P2: Display>(&mut self, p1: P1, p2: P2) {
         println!("part 1: {p1}\npart 2: {p2}");
+        self.lap("solving");
+        self.print_times();
+    }
 
+    fn print_times(&self) {
         if self.time {
+            let total = self.start.elapsed().as_secs_f64() * 1000.0;
             println!();
-            let time = self.now.elapsed().as_secs_f64() * 1000.0;
-            if let Some(parsing) = self.parsing_time {
-                println!("parsing took {:.2}ms", parsing);
+            
+            for (name, time) in self.laps.iter() {
+                println!("{name} took {time:.2}ms");
             }
-            println!("solving took {:.2}ms", time);
+
+            println!();
+            println!("In total, it took {total:.2}ms to solve");
         }
     }
 }

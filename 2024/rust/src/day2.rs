@@ -9,7 +9,6 @@ fn check_distances(line: impl Iterator<Item = i32> + Clone) -> bool {
         .map(|(a, b)| b - a)
         .all(|d| (-3..=-1).contains(&d));
     let ascending = line
-        .clone()
         .tuple_windows()
         .map(|(a, b)| b - a)
         .all(|d| (1..=3).contains(&d));

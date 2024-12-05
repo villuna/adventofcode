@@ -3,6 +3,8 @@ use once_cell::sync::Lazy;
 use paste::paste;
 use std::{collections::HashMap, fmt::Display, time::Instant};
 
+mod parsers;
+
 macro_rules! days_decl {
     ($daymap_name:ident : $($ds:literal),*) => {
         $( paste!{
@@ -18,7 +20,7 @@ macro_rules! days_decl {
     }
 }
 
-days_decl!(DAYS: 1, 2, 3, 4);
+days_decl!(DAYS: 1, 2, 3, 4, 5);
 
 #[derive(Parser)]
 struct Args {

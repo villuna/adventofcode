@@ -8,7 +8,7 @@ const DIAG_BACK: [(usize, usize); 4] = [(0, 0), (1, 1), (2, 2), (3, 3)];
 const DIAG_FORWARD: [(usize, usize); 4] = [(3, 0), (2, 1), (1, 2), (0, 3)];
 
 fn check_pattern<const N: usize>(
-    grid: &Vec<Vec<u8>>,
+    grid: &[Vec<u8>],
     pattern: [(usize, usize); N],
     target: [u8; N],
 ) -> i32 {

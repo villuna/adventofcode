@@ -1,6 +1,6 @@
 use itertools::Itertools;
 
-use crate::AOContext;
+use aoc::AOContext;
 
 const HORIZONTAL: [(usize, usize); 4] = [(0, 0), (0, 1), (0, 2), (0, 3)];
 const VERTICAL: [(usize, usize); 4] = [(0, 0), (1, 0), (2, 0), (3, 0)];

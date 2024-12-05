@@ -1,4 +1,4 @@
-use crate::AOContext;
+use aoc::AOContext;
 use itertools::Itertools;
 
 fn count(x: i32, list: &[i32]) -> i32 {

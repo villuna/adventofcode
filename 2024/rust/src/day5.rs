@@ -4,7 +4,7 @@ use nom::{
 };
 use std::cmp::Ordering;
 
-use crate::{parsers::int, AOContext};
+use aoc::{parsers::int, AOContext};
 
 type Orders = HashSet<(i32, i32)>;
 type Updates = Vec<Vec<i32>>;

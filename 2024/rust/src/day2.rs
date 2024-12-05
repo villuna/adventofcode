@@ -1,4 +1,4 @@
-use crate::AOContext;
+use aoc::AOContext;
 use itertools::Itertools;
 
 // Checks that a line is safe. Takes in a list of distances

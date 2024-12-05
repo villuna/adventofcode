@@ -1,6 +1,6 @@
 use regex::Regex;
 
-use crate::AOContext;
+use aoc::AOContext;
 
 pub fn day3(input: String, ctx: &mut AOContext) {
     let re = Regex::new(r"mul\(([0-9]{1,3}),([0-9]{1,3})\)").unwrap();

@@ -1,3 +1,5 @@
+pub const DIRECTIONS: [Dir; 4] = [Dir::Up, Dir::Right, Dir::Down, Dir::Left];
+
 #[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Dir {
     Up,
@@ -12,6 +14,16 @@ pub fn add_coords(c1: (isize, isize), c2: (isize, isize)) -> (isize, isize) {
 
 #[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Coord(pub isize, pub isize);
+
+impl Coord {
+    pub fn in_bounds(&self, lower: (isize, isize), upper: (isize, isize)) -> bool {
+        self.0 >= lower.0 && self.1 >= lower.1 && self.0 < upper.0 && self.1 < upper.1
+    }
+
+    pub fn in_bounds_positive(&self, bounds: (isize, isize)) -> bool {
+        self.in_bounds((0, 0), bounds)
+    }
+}
 
 impl std::ops::Add for Coord {
     type Output = Self;

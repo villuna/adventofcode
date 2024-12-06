@@ -2,6 +2,7 @@ use clap::Parser;
 use std::{fmt::Display, time::Instant};
 
 pub mod parsers;
+pub mod utils;
 
 #[macro_export]
 macro_rules! days_decl {
@@ -80,11 +81,24 @@ impl AOContext {
             println!();
 
             for (name, time) in self.laps.iter() {
-                println!("{name} took {time:.2}ms");
+                if *time < 100.0 {
+                    println!("{name} took {}", format_time(*time));
+                } else {
+                    println!("{name} took {}", format_time(*time));
+                }
             }
 
             println!();
-            println!("In total, it took {total:.2}ms to solve");
+            println!("In total, it took {} to solve", format_time(total));
         }
+    }
+}
+
+fn format_time(millis: f64) -> String {
+    // I know negative time is impossible but it can't hurt to be correct right
+    if millis.abs() > 500.0 {
+        format!("{millis:.2} ms ({:.2} s)", millis / 1000.0)
+    } else {
+        format!("{millis:.2} ms")
     }
 }

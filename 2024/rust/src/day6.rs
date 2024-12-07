@@ -81,7 +81,7 @@ pub fn day6(input: String, ctx: &mut AOContext) {
 
     ctx.submit_part1(visited.len());
 
-    let part2 = visited.into_iter().filter(move |&c| {
+    let part2 = visited.into_iter().filter(|&c| {
         let mut obstacles = obstacles.clone();
         let mut dist_map = dist_map.clone();
 

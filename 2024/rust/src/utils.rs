@@ -33,6 +33,14 @@ impl std::ops::Add for Coord {
     }
 }
 
+impl std::ops::Sub for Coord {
+    type Output = Self;
+
+    fn sub(self, rhs: Self) -> Self::Output {
+        Coord(self.0 - rhs.0, self.1 - rhs.1)
+    }
+}
+
 impl std::ops::Add<Dir> for Coord {
     type Output = Self;
 

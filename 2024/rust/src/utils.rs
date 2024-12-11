@@ -105,3 +105,21 @@ impl Dir {
         }
     }
 }
+
+pub fn digits_in(int: u64) -> u32 {
+    if int == 0 {
+        1
+    } else {
+        int.ilog10() + 1
+    }
+}
+
+pub fn unconcat(whole: u64, suffix: u64) -> Option<u64> {
+    let suffix_digits = digits_in(suffix);
+    (suffix == whole % 10u64.pow(suffix_digits)).then_some(whole / 10u64.pow(suffix_digits))
+}
+
+pub fn split(int: u64) -> Option<(u64, u64)> {
+    let n = digits_in(int);
+    (n % 2 == 0).then_some((int / 10u64.pow(n / 2), int % 10u64.pow(n / 2)))
+}

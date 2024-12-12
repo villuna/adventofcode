@@ -3,12 +3,63 @@ const ArrayList = std.ArrayList;
 const File = std.fs.File;
 const expect = std.testing.expect;
 
+pub fn HashSet(comptime K: type) type {
+    return std.AutoHashMap(K, void);
+}
+
 pub const Vec2 = struct {
     x: isize,
     y: isize,
 
     fn eq(self: *const Vec2, other: *const Vec2) bool {
         return self.x == other.x and self.y == other.y;
+    }
+};
+
+pub const Grid = struct {
+    map: ArrayList(ArrayList(u8)),
+
+    pub fn width(self: *const Grid) usize {
+        return self.map.items[0].items.len;
+    }
+
+    pub fn height(self: *const Grid) usize {
+        return self.map.items.len;
+    }
+
+    pub fn isInBounds(self: *const Grid, pos: Vec2) bool {
+        return pos.y >= 0 and pos.y < self.height() and pos.x >= 0 and pos.x < self.width();
+    }
+
+    // Returns the char at position `pos` if it exists and null otherwise
+    pub fn charAt(self: *const Grid, pos: Vec2) ?u8 {
+        if (self.isInBounds(pos)) {
+            return self.map.items[@intCast(pos.y)].items[@intCast(pos.x)];
+        } else {
+            return null;
+        }
+    }
+
+    pub fn parse(file: *File, alloc: std.mem.Allocator) !Grid {
+        var res = ArrayList(ArrayList(u8)).init(alloc);
+        var reader = file.reader();
+        var y: isize = 0;
+
+        while (true) {
+            var line = ArrayList(u8).init(alloc);
+
+            reader.streamUntilDelimiter(line.writer(), '\n', null) catch |err| {
+                try expect(err == error.EndOfStream);
+                break;
+            };
+
+            try res.append(line);
+            y += 1;
+        }
+
+        return Grid{
+            .map = res,
+        };
     }
 };
 

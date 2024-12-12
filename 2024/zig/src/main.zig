@@ -1,8 +1,10 @@
 const std = @import("std");
 const day10 = @import("day10.zig").day10;
+const day12 = @import("day12.zig").day12;
 
 const days = [_]struct { day: u8, func: *const fn () anyerror!void }{
     .{ .day = 10, .func = day10 },
+    .{ .day = 12, .func = day12 },
 };
 
 pub fn main() !void {

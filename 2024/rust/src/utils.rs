@@ -1,7 +1,8 @@
 pub const DIRECTIONS: [Dir; 4] = [Dir::Up, Dir::Right, Dir::Down, Dir::Left];
 
-#[derive(Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
+#[derive(Default, Clone, Copy, Debug, Ord, PartialOrd, Eq, PartialEq, Hash)]
 pub enum Dir {
+    #[default]
     Up,
     Down,
     Left,
@@ -12,7 +13,7 @@ pub fn add_coords(c1: (isize, isize), c2: (isize, isize)) -> (isize, isize) {
     (c1.0 + c2.0, c1.1 + c2.1)
 }
 
-#[derive(Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
+#[derive(Default, Copy, Clone, Debug, Hash, Eq, PartialEq, PartialOrd, Ord)]
 pub struct Coord(pub isize, pub isize);
 
 impl Coord {

@@ -96,9 +96,12 @@ impl AOContext {
 
 fn format_time(millis: f64) -> String {
     // I know negative time is impossible but it can't hurt to be correct right
-    if millis.abs() > 500.0 {
-        format!("{millis:.2} ms ({:.2} s)", millis / 1000.0)
-    } else {
+    if millis.abs() < 0.5 {
+        let us = millis * 1000.0;
+        format!("{us:.2} us")
+    } else if millis.abs() < 500.0 {
         format!("{millis:.2} ms")
+    } else {
+        format!("{millis:.2} ms ({:.2} s)", millis / 1000.0)
     }
 }

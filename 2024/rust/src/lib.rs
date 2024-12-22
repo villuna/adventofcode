@@ -1,4 +1,5 @@
 use clap::Parser;
+use colored::{ColoredString, Colorize};
 use std::{fmt::Display, time::Instant};
 
 pub mod parsers;
@@ -59,12 +60,12 @@ impl AOContext {
     }
 
     pub fn submit_part1<T: Display>(&mut self, result: T) {
-        println!("part 1: {result}");
+        println!("{} {result}", "part 1:".bright_black().bold());
         self.lap("part 1");
     }
 
     pub fn submit_part2<T: Display>(&mut self, result: T) {
-        println!("part 2: {result}");
+        println!("{} {result}", "part 2:".yellow().bold());
         self.lap("part 2");
         self.print_times();
     }
@@ -94,14 +95,24 @@ impl AOContext {
     }
 }
 
-fn format_time(millis: f64) -> String {
+fn format_time(millis: f64) -> ColoredString {
     // I know negative time is impossible but it can't hurt to be correct right
     if millis.abs() < 0.5 {
         let us = millis * 1000.0;
-        format!("{us:.2} us")
+        format!("{us:.2} μs").purple()
     } else if millis.abs() < 500.0 {
-        format!("{millis:.2} ms")
+        let text = format!("{millis:.2} ms");
+        if millis.abs() < 100.0 {
+            text.green()
+        } else {
+            text.yellow()
+        }
     } else {
-        format!("{millis:.2} ms ({:.2} s)", millis / 1000.0)
+        let text = format!("{millis:.2} ms ({:.2} s)", millis / 1000.0);
+        if millis < 1000.0 {
+            text.yellow()
+        } else {
+            text.red()
+        }
     }
 }

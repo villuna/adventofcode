@@ -6,6 +6,7 @@ edition = "2021"
 [dependencies]
 ahash = "0.8.11"
 clap = { version = "4.5.21", features = ["derive"] }
+colored = "2.2.0"
 indicatif = { version = "0.17.9", features = ["rayon"] }
 itertools = "0.13.0"
 nalgebra = "0.33.2"

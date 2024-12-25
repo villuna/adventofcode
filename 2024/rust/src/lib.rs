@@ -71,7 +71,7 @@ impl AOContext {
     }
 
     pub fn submit_both<P1: Display, P2: Display>(&mut self, p1: P1, p2: P2) {
-        println!("part 1: {p1}\npart 2: {p2}");
+        println!("{} {p1}\n{} {p2}", "part 1:".bright_black().bold(), "part 2:".yellow().bold());
         self.lap("solving");
         self.print_times();
     }

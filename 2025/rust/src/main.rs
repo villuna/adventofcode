@@ -1,7 +1,7 @@
+use aoc::{AOContext, Args, days_decl};
 use clap::Parser;
-use aoc::{days_decl, AOContext, Args};
 
-days_decl!(DAYS: 1);
+days_decl!(DAYS: 1, 2);
 
 fn main() {
     let args = Args::parse();

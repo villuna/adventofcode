@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
 colored = "3.0.0"
+itertools = "0.14.0"
 nom = "8.0.0"
 paste = "1.0.15"
 rayon = "1.11.0"

@@ -1,43 +1,55 @@
-use std::collections::HashSet;
+use std::collections::{HashMap, HashSet};
 
 use aoc::AOContext;
 
-fn get_accessible(grid: &HashSet<(i32, i32)>, width: usize, height: usize) -> Vec<(i32, i32)> {
-    let mut res = Vec::new();
+fn remove_accessible(grid: &mut HashMap<(i32, i32), u8>) -> bool {
+    let mut removed_any = false;
 
-    for x in 0..width as i32 {
-        for y in 0..height as i32 {
-            if !grid.contains(&(x, y)) {
-                continue;
-            }
-
-            let mut count = 0;
+    for ((x, y), count) in grid.clone().into_iter() {
+        if count < 4 {
+            grid.remove(&(x, y));
 
             for i in -1..=1 {
                 for j in -1..=1 {
-                    if i == 0 && j == 0 {
-                        continue;
-                    }
-
-                    if grid.contains(&(x + i, y + j)) {
-                        count += 1;
+                    if let Some(c) = grid.get_mut(&(x + i, y + j)) {
+                        *c -= 1;
                     }
                 }
             }
 
-            if count < 4 {
-                res.push((x, y));
-            }
+            removed_any = true;
         }
     }
 
-    res
+    removed_any
+}
+
+fn count_grid(grid: &HashSet<(i32, i32)>) -> HashMap<(i32, i32), u8> {
+    let mut map = HashMap::new();
+
+    for &c in grid {
+        let mut count = 0;
+
+        for i in -1..=1 {
+            for j in -1..=1 {
+                if i == 0 && j == 0 {
+                    continue;
+                }
+
+                if grid.contains(&(c.0 + i, c.1 + j)) {
+                    count += 1;
+                }
+            }
+        }
+
+        map.insert(c, count);
+    }
+
+    map
 }
 
 pub fn day4(input: String, ctx: &mut AOContext) {
     let mut grid = HashSet::new();
-    let width = input.lines().count();
-    let height = input.lines().next().unwrap().chars().count();
 
     for (y, line) in input.lines().enumerate() {
         for (x, c) in line.chars().enumerate() {
@@ -49,19 +61,11 @@ pub fn day4(input: String, ctx: &mut AOContext) {
 
     ctx.parsing_done();
 
-    let mut accessible = get_accessible(&grid, width, height);
+    let mut grid = count_grid(&grid);
 
-    ctx.submit_part1(accessible.len());
+    ctx.submit_part1(grid.values().filter(|c| **c < 4).count());
 
     let original_len = grid.len();
-
-    while !accessible.is_empty() {
-        for c in accessible {
-            grid.remove(&c);
-        }
-
-        accessible = get_accessible(&grid, width, height)
-    }
-
+    while remove_accessible(&mut grid) {}
     ctx.submit_part2(original_len - grid.len());
 }

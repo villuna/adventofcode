@@ -6,6 +6,7 @@ edition = "2024"
 [dependencies]
 clap = { version = "4.5.53", features = ["derive"] }
 colored = "3.0.0"
+good_lp = { version = "1.14.2", features = ["scip", "scip_bundled"], default-features = false }
 indicatif = { version = "0.18.3", features = ["rayon"] }
 itertools = "0.14.0"
 nom = "8.0.0"

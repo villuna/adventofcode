@@ -96,6 +96,7 @@ dependencies = [
  "nom 8.0.0",
  "paste",
  "rayon",
+ "smallvec",
 ]
 
 [[package]]

@@ -45,7 +45,7 @@ pub fn day8(input: String, ctx: &mut AOContext) {
 
         // Walk through all the circuits, if it connects with the new circuit then join them up
         for i in (0..circuits.len()).rev() {
-            if circuits[i].iter().any(|e2| edges_overlap(&e, e2)) {
+            if circuits[i].iter().any(|e2| edges_overlap(e, e2)) {
                 let mut circuit = circuits.remove(i);
                 new_circuit.append(&mut circuit);
             }
@@ -81,13 +81,13 @@ pub fn day8(input: String, ctx: &mut AOContext) {
         let mut new_circuit = vec![*e];
 
         for i in (0..circuits.len()).rev() {
-            if circuits[i].iter().any(|e2| edges_overlap(&e, e2)) {
+            if circuits[i].iter().any(|e2| edges_overlap(e, e2)) {
                 let mut circuit = circuits.remove(i);
                 new_circuit.append(&mut circuit);
 
                 // If every node is connected to a circuit and there is only one circuit then the
                 // whole network is fully connected and this was the last edge
-                if visited.len() == nodes && circuits.len() == 0 {
+                if visited.len() == nodes && circuits.is_empty() {
                     ctx.submit_part2(e.0.0 * e.1.0);
                     return;
                 }

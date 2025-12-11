@@ -77,10 +77,9 @@ fn all_points_in_area(rect: (Coord, Coord), corners: &[Coord], bounds: (Coord, C
     points.extend((min.1..=max.1).map(|y| (min.0, y)));
     points.extend((min.1..=max.1).map(|y| (max.0, y)));
 
-    let res = points
+    points
         .into_par_iter()
-        .all(|p| point_in_area(p, corners, bounds));
-    res
+        .all(|p| point_in_area(p, corners, bounds))
 }
 
 fn corners_in_area(rect: (Coord, Coord), corners: &[Coord], bounds: (Coord, Coord)) -> bool {

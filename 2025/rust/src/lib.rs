@@ -70,7 +70,11 @@ impl AOContext {
     }
 
     pub fn submit_both<P1: Display, P2: Display>(&mut self, p1: P1, p2: P2) {
-        println!("{} {p1}\n{} {p2}", "part 1:".bright_black().bold(), "part 2:".yellow().bold());
+        println!(
+            "{} {p1}\n{} {p2}",
+            "part 1:".bright_black().bold(),
+            "part 2:".yellow().bold()
+        );
         self.lap("solving");
         self.print_times();
     }
@@ -81,11 +85,7 @@ impl AOContext {
             println!();
 
             for (name, time) in self.laps.iter() {
-                if *time < 100.0 {
-                    println!("{name} took {}", format_time(*time));
-                } else {
-                    println!("{name} took {}", format_time(*time));
-                }
+                println!("{name} took {}", format_time(*time));
             }
 
             println!();

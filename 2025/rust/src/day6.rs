@@ -14,7 +14,7 @@ pub fn day6(input: String, ctx: &mut AOContext) {
     let mut ops = Vec::new();
 
     for line in input.trim().lines() {
-        if line.chars().next().unwrap().is_digit(10) {
+        if line.chars().next().unwrap().is_ascii_digit() {
             let row = line
                 .split_ascii_whitespace()
                 .map(|n| n.parse::<u64>().unwrap())

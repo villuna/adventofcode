@@ -2,7 +2,7 @@ use aoc::AOContext;
 use rayon::iter::{IntoParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 fn is_invalid(num: u64, digits: u32) -> bool {
-    if digits % 2 != 0 {
+    if !digits.is_multiple_of(2) {
         return false;
     }
 
@@ -21,7 +21,7 @@ fn is_invalid_2(num: u64, lengths: &[u32]) -> bool {
 
         while next > 0 {
             let rem = next % pow;
-            next = next / pow;
+            next /= pow;
 
             if rem != start {
                 return false;

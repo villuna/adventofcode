@@ -21,7 +21,7 @@ fn dfs<'s>(
 
     // Sorry this is objectively terrible but it's all i got
     let paths = (|| {
-        if let Some(&res) = cache.get(&(node, &visited)) {
+        if let Some(&res) = cache.get(&(node, visited)) {
             return res;
         };
 
